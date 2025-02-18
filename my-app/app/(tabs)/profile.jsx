@@ -12,6 +12,8 @@ import {
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
+import { Picker } from '@react-native-picker/picker';
+
 
 
 const Profile = () => {
@@ -19,6 +21,8 @@ const Profile = () => {
   const [userInfo, setUserInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedRole, setSelectedRole] = useState('');
+
 
   // Fetch the user's profile data from the server when the component mounts
   useEffect(() => {
@@ -41,7 +45,12 @@ const Profile = () => {
         }
   
         const data = await response.json();
-        setUserInfo(data.profile); // Use data.profile returned by the server
+        if (data.profile) {
+          setUserInfo(data.profile);
+          setSelectedRole(data.profile.role || '');  // Set default role if missing
+        } else {
+          throw new Error('Profile data is missing');
+        }
       } catch (err) {
         console.error('Error fetching profile data:', err);
         setError(err.message);
@@ -95,6 +104,28 @@ const Profile = () => {
     } catch (error) {
       console.error('Error picking image:', error);
       Alert.alert('Error', 'An error occurred while selecting the image.');
+    }
+  };
+
+  const handleRoleChange = async (itemValue) => {
+    setSelectedRole(itemValue);
+    try {
+      const email = await AsyncStorage.getItem('email');
+      const response = await fetch('http://10.0.0.64:5001/update-role', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, role: itemValue }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update role');
+      }
+      Alert.alert('Success', 'Role updated successfully!');
+      setUserInfo(prev => ({ ...prev, role: itemValue }));
+    } catch (error) {
+      console.error('Error updating role:', error);
+      Alert.alert('Error', 'An error occurred while updating the role.');
     }
   };
 
@@ -208,6 +239,20 @@ const Profile = () => {
         <Text style={styles.infoLabel}>Email:</Text>
         <Text style={styles.infoValue}>{userInfo.email}</Text>
       </View>
+
+      {/* Role Picker */}
+      <View style={styles.pickerContainer}>
+        <Text style={styles.infoLabel}>Role:</Text>
+        <Picker
+          selectedValue={selectedRole}
+          onValueChange={(itemValue) => handleRoleChange(itemValue)}
+          style={styles.picker}
+        >
+          <Picker.Item label="Select Role" value="" color="#333" />
+          <Picker.Item label="User" value="user" color="#333"/>
+          <Picker.Item label="Service-Provider" value="Service-provider" color="#333"/>
+        </Picker>
+      </View>
   
       <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
         <Text style={styles.signOutButtonText}>Sign Out</Text>
@@ -277,6 +322,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 20,
   },
+  pickerContainer: {
+    width: '100%',
+    marginVertical: 10,
+    paddingHorizontal: 10,
+    backgroundColor: '#f9f9f9',  // Temporary for debugging layout
+    height: 100,
+  },
+  picker: {
+    height: 50,
+    width: '100%',
+    justifyContent: 'center',
+  },
+  
 });
 
 export default Profile;

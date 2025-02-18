@@ -8,6 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const SignUpScreen = () => {
@@ -18,11 +19,18 @@ const SignUpScreen = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
   // Handle the sign-up button press
   const handleSignUp = async () => {
     // Basic validation
     if (!fullName || !email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill out all fields.');
+      return;
+    }
+    // Email format validation
+    if (!emailRegex.test(email)) {
+      Alert.alert('Error', 'Please enter a valid email address.');
       return;
     }
 
@@ -42,9 +50,9 @@ const SignUpScreen = () => {
         const data = await response.json();
         
         if (response.ok) {
+          await AsyncStorage.setItem('email', email); // Store email immediately
           Alert.alert('Success', data.message || 'User registered successfully');
-          // Optionally, navigate to login page or home page after signup
-          router.replace('(tabs)');
+          router.replace('(tabs)'); // Navigate after storing email
         } else {
           Alert.alert('Signup Failed', data.message || 'Signup failed, please try again');
         }
@@ -52,6 +60,9 @@ const SignUpScreen = () => {
         console.error('Signup error:', error);
         Alert.alert('Error', 'An error occurred. Please try again.');
       }
+  };
+  const goBack = () => {
+    router.back(); // Navigates back to the previous page
   };
 
   return (
@@ -93,6 +104,12 @@ const SignUpScreen = () => {
       <TouchableOpacity style={styles.button} onPress={handleSignUp}>
         <Text style={styles.buttonText}>Sign Up</Text>
       </TouchableOpacity>
+
+       {/* Back Button */}
+      <TouchableOpacity style={styles.backButton} onPress={goBack}>
+        <Text style={styles.backButtonText}>Back</Text>
+      </TouchableOpacity>
+
     </View>
   );
 };
@@ -127,6 +144,17 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 18,
+  },
+  backButton: {
+    marginTop: 15,
+    backgroundColor: '#6c757d',
+    paddingVertical: 12,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  backButtonText: {
+    color: '#fff',
+    fontSize: 16,
   },
 });
 
