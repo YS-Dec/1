@@ -109,7 +109,7 @@ app.post('/signup', (req, res) => {
   }
 
   // Create new user object
-  const newUser = { fullName, email, password, profilePictureUrl: '' };
+  const newUser = { fullName, email, password, profilePictureUrl: '', role: 'user' };
 
   // Append the new user and write back to the file
   fileUsers.push(newUser);
@@ -182,6 +182,34 @@ app.post('/upload-profile-picture', upload.single('profilePicture'), (req, res) 
   } catch (error) {
     console.error('Error updating user data:', error);
     return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.post('/update-role', (req, res) => {
+  const { email, role } = req.body;
+
+  if (!email || !role) {
+    return res.status(400).json({ message: 'Email and role are required' });
+  }
+
+  try {
+    const fileUsers = readUsersFromFile();
+    const userIndex = fileUsers.findIndex(u => u.email === email);
+
+    if (userIndex === -1) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update the user's role
+    fileUsers[userIndex].role = role;
+
+    // Save the updated users list back to the file
+    writeUsersToFile(fileUsers);
+
+    res.status(200).json({ success: true, message: 'Role updated successfully', user: fileUsers[userIndex] });
+  } catch (err) {
+    console.error('Server error:', err);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
