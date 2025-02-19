@@ -3,9 +3,8 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import logo from "@/assets/images/logo.png";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
-
-const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
+import { auth } from "../firebaseConfig.js";  // Correct import
 
 const LoginPage = () => {
   const router = useRouter();
@@ -18,50 +17,43 @@ const LoginPage = () => {
 
   // Login handler function
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Please enter both email and password.");
-      return;
-    }
+  if (!email || !password) {
+    Alert.alert("Error", "Please enter both email and password.");
+    return;
+  }
 
-    // Email format validation
-    if (!emailRegex.test(email)) {
-      Alert.alert("Error", "Please enter a valid email address.");
-      return;
-    }
+  try {
+    // Firebase authentication
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
 
-    setLoading(true);
+    console.log("User logged in:", user);
+    await AsyncStorage.setItem('email', email);
+    await AsyncStorage.setItem('authToken', user.accessToken); // Store Firebase auth token
 
-    try {
-      const response = await fetch('http://10.0.0.64:5001/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+    Alert.alert("Success", "Login successful!");
+    router.replace("(tabs)"); // Navigate to home
+  } catch (error) {
+    console.error("Login failed:", error);
+    Alert.alert("Login Error", error.message);
+  }
+};
+
+const handleForgotPassword = async () => {
+  if (!email) {
+    Alert.alert("Error", "Please enter your email address.");
+    return;
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+    Alert.alert("Success", "Password reset email sent! Check your inbox.");
+  } catch (error) {
+    console.error("Password Reset Error:", error);
+    Alert.alert("Error", error.message);
+  }
+};
   
-      console.log("Response status:", response.status); // Log response status
-      console.log("Response headers:", response.headers); // Log headers
-  
-      const data = await response.json();
-      console.log("Response JSON:", data); // Log response body
-  
-      if (response.ok) {
-        // Store email and authentication token in AsyncStorage
-        await AsyncStorage.setItem('email', email);
-        if (data.authToken) {
-          await AsyncStorage.setItem('authToken', data.authToken);
-        }
-        alert('Login successful!');
-        router.replace('(tabs)'); // Navigate to the home page
-      } else {
-        alert(data.message || 'Invalid email or password');
-      }
-    } catch (error) {
-      console.error('Login failed:', error);
-      alert('Server error, please try again');
-    }finally {
-      setLoading(false);
-    }
-  };
 
   const goToSignUp = () => {
     router.push('/signup');
@@ -92,6 +84,9 @@ const LoginPage = () => {
       </TouchableOpacity>
       <TouchableOpacity style={styles.signupButton} onPress={goToSignUp}>
         <Text style={styles.signupText}>Don't have an account? Sign Up</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.forgotPasswordButton} onPress={handleForgotPassword}>
+        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
       </TouchableOpacity>
     </View>
   );
@@ -145,6 +140,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textDecorationLine: 'underline',
   },
+  forgotPasswordButton: {
+    marginTop: 10,
+  },
+  forgotPasswordText: {
+    color: '#007BFF',
+    fontSize: 16,
+    textDecorationLine: 'underline',
+  }
 });
 
 export default LoginPage;

@@ -8,7 +8,10 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebaseConfig.js";  // Correct import
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 
 const SignUpScreen = () => {
@@ -19,48 +22,32 @@ const SignUpScreen = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
   // Handle the sign-up button press
   const handleSignUp = async () => {
-    // Basic validation
-    if (!fullName || !email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill out all fields.');
+    if (!email || !password) {
+      Alert.alert("Error", "Please enter both email and password.");
       return;
     }
-    // Email format validation
-    if (!emailRegex.test(email)) {
-      Alert.alert('Error', 'Please enter a valid email address.');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match.');
-      return;
-    }
-
-    try {
-        // Send the signup request to your server
-        const response = await fetch('http://10.0.0.64:5001/signup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fullName, email, password }),
-        });
   
-        const data = await response.json();
-        
-        if (response.ok) {
-          await AsyncStorage.setItem('email', email); // Store email immediately
-          Alert.alert('Success', data.message || 'User registered successfully');
-          router.replace('(tabs)'); // Navigate after storing email
-        } else {
-          Alert.alert('Signup Failed', data.message || 'Signup failed, please try again');
-        }
-      } catch (error) {
-        console.error('Signup error:', error);
-        Alert.alert('Error', 'An error occurred. Please try again.');
-      }
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+  
+      console.log("User signed up:", user);
+      await AsyncStorage.setItem('email', email);
+      await AsyncStorage.setItem('authToken', user.accessToken);
+  
+      Alert.alert("Success", "Signup successful!");
+      router.replace("(tabs)"); // Navigate to home
+    } catch (error) {
+      console.error("Signup failed:", error);
+      Alert.alert("Signup Error", error.message);
+    }
   };
+
+
+  
   const goBack = () => {
     router.back(); // Navigates back to the previous page
   };
@@ -72,6 +59,7 @@ const SignUpScreen = () => {
       <TextInput
         style={styles.input}
         placeholder="Full Name"
+        placeholderTextColor="gray"  // Change this color
         value={fullName}
         onChangeText={setFullName}
       />
@@ -79,6 +67,7 @@ const SignUpScreen = () => {
       <TextInput
         style={styles.input}
         placeholder="Email"
+        placeholderTextColor="gray"  // Change this color
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -88,6 +77,7 @@ const SignUpScreen = () => {
       <TextInput
         style={styles.input}
         placeholder="Password"
+        placeholderTextColor="gray"  // Change this color
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -96,6 +86,7 @@ const SignUpScreen = () => {
       <TextInput
         style={styles.input}
         placeholder="Confirm Password"
+        placeholderTextColor="gray"  // Change this color
         value={confirmPassword}
         onChangeText={setConfirmPassword}
         secureTextEntry
