@@ -3,8 +3,8 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import logo from "@/assets/images/logo.png";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "../firebaseConfig.js";  // Correct import
+import { signInWithEmailAndPassword, sendPasswordResetEmail, signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "../firebaseConfig.js";  // Correct import
 
 const LoginPage = () => {
   const router = useRouter();
@@ -21,7 +21,6 @@ const LoginPage = () => {
     Alert.alert("Error", "Please enter both email and password.");
     return;
   }
-
   try {
     // Firebase authentication
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -41,10 +40,9 @@ const LoginPage = () => {
 
 const handleForgotPassword = async () => {
   if (!email) {
-    Alert.alert("Error", "Please enter your email address.");
+    Alert.alert("Error", "Please enter your email address in the above.");
     return;
   }
-
   try {
     await sendPasswordResetEmail(auth, email);
     Alert.alert("Success", "Password reset email sent! Check your inbox.");
@@ -55,9 +53,9 @@ const handleForgotPassword = async () => {
 };
   
 
-  const goToSignUp = () => {
-    router.push('/signup');
-  };
+const goToSignUp = () => {
+  router.push('/signup');
+};
 
   return (
     <View style={styles.container}>
@@ -68,6 +66,7 @@ const handleForgotPassword = async () => {
       <TextInput
         style={styles.input}
         placeholder="Email"
+        placeholderTextColor="gray"  
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -75,6 +74,7 @@ const handleForgotPassword = async () => {
       <TextInput
         style={styles.input}
         placeholder="Password"
+        placeholderTextColor="gray"
         secureTextEntry
         value={password}
         onChangeText={setPassword}

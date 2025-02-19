@@ -1,8 +1,6 @@
-// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-import {getAuth} from "firebase/auth";
+import { getAuth } from "firebase/auth"; // ✅ Use getAuth() instead of initializeAuth()
+import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -16,6 +14,13 @@ const firebaseConfig = {
   measurementId: "G-P2MNQWYKVW"
 };
 
-// Initialize Firebase
+// Initialize Firebase App
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
+
+// ✅ Fix Auth Persistence
+const auth = getAuth(app); // ✅ Correct way to get Firebase Auth instance
+
+// ✅ Initialize Firestore
+const db = getFirestore(app);
+
+export { auth, db, app };
