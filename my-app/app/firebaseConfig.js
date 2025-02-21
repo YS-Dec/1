@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth"; // ✅ Use getAuth() instead of initializeAuth()
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -23,4 +24,7 @@ const auth = getAuth(app); // ✅ Correct way to get Firebase Auth instance
 // ✅ Initialize Firestore
 const db = getFirestore(app);
 
-export { auth, db, app };
+const storage = getStorage(app);
+
+
+export { auth, db, app, storage };

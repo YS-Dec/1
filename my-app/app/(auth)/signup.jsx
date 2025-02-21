@@ -11,45 +11,67 @@ import { useRouter } from 'expo-router';
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebaseConfig.js";  // Correct import
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { db } from "../firebaseConfig"; // Import Firestore
+import { doc, setDoc } from "firebase/firestore";
+
 
 
 
 const SignUpScreen = () => {
   const router = useRouter();
+
   // State variables for form inputs
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-
-  // Handle the sign-up button press
+  // Handle Sign Up
   const handleSignUp = async () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Please enter both email and password.");
+    if (!fullName || !email || !password || !confirmPassword) {
+      Alert.alert("Error", "All fields are required.");
       return;
     }
-  
+
+    if (password !== confirmPassword) {
+      Alert.alert("Error", "Passwords do not match.");
+      return;
+    }
+
     try {
+      // 🔥 Create user in Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-  
+
       console.log("User signed up:", user);
-      await AsyncStorage.setItem('email', email);
-      await AsyncStorage.setItem('authToken', user.accessToken);
-  
+
+      // 🔥 Store user info in Firestore (creating a user profile)
+      await setDoc(doc(db, "users", user.uid), {
+        fullName: fullName,  
+        email: email,
+        profilePictureUrl: "",  // Default empty profile picture
+        createdAt: new Date(),
+      });
+
+      // 🔥 Save user session locally
+      await AsyncStorage.setItem("email", email);
+      await AsyncStorage.setItem("authToken", user.accessToken);
+
+      // ✅ Success message
       Alert.alert("Success", "Signup successful!");
-      router.replace("(tabs)"); // Navigate to home
+      
+      // 🚀 Navigate to the home screen
+      router.replace("(tabs)"); 
+
     } catch (error) {
       console.error("Signup failed:", error);
       Alert.alert("Signup Error", error.message);
     }
   };
 
-
-  
+  // Go Back Function
   const goBack = () => {
-    router.back(); // Navigates back to the previous page
+    router.back();
   };
 
   return (
@@ -59,7 +81,7 @@ const SignUpScreen = () => {
       <TextInput
         style={styles.input}
         placeholder="Full Name"
-        placeholderTextColor="gray"  // Change this color
+        placeholderTextColor="gray"
         value={fullName}
         onChangeText={setFullName}
       />
@@ -67,7 +89,7 @@ const SignUpScreen = () => {
       <TextInput
         style={styles.input}
         placeholder="Email"
-        placeholderTextColor="gray"  // Change this color
+        placeholderTextColor="gray"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -77,7 +99,7 @@ const SignUpScreen = () => {
       <TextInput
         style={styles.input}
         placeholder="Password"
-        placeholderTextColor="gray"  // Change this color
+        placeholderTextColor="gray"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -86,7 +108,7 @@ const SignUpScreen = () => {
       <TextInput
         style={styles.input}
         placeholder="Confirm Password"
-        placeholderTextColor="gray"  // Change this color
+        placeholderTextColor="gray"
         value={confirmPassword}
         onChangeText={setConfirmPassword}
         secureTextEntry
@@ -96,16 +118,15 @@ const SignUpScreen = () => {
         <Text style={styles.buttonText}>Sign Up</Text>
       </TouchableOpacity>
 
-       {/* Back Button */}
+      {/* Back Button */}
       <TouchableOpacity style={styles.backButton} onPress={goBack}>
         <Text style={styles.backButtonText}>Back</Text>
       </TouchableOpacity>
-
     </View>
   );
 };
 
-// Styling for the component
+// Styling
 const styles = StyleSheet.create({
   container: {
     flex: 1,
