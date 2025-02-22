@@ -55,6 +55,7 @@ const submitCleaningRequest = async (location, date, time, additionalNotes, rout
 
     // ✅ Fix field names (use lowercase for consistency)
     const request = {
+      userId: user.uid,
       userEmail: userEmail,
       location: location,  // ✅ Lowercase
       date: date,  // ✅ Lowercase
@@ -64,7 +65,7 @@ const submitCleaningRequest = async (location, date, time, additionalNotes, rout
       timestamp: new Date(), // ✅ Correct timestamp format
     };
 
-    const docRef = await addDoc(collection(db, "cleanningRequests"), request);
+    const docRef = await addDoc(collection(db, "cleaningRequests"), request);
     console.log("✅ Request submitted successfully! Document ID:", docRef.id);
 
     Alert.alert("Success", "Cleaning request submitted!");
