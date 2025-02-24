@@ -11,17 +11,18 @@ import {
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from "expo-file-system";  // ✅ Added missing import
+import * as FileSystem from "expo-file-system";  
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, doc, onSnapshot, updateDoc } from "firebase/firestore"; // ✅ Added updateDoc
+import { getFirestore, doc, onSnapshot, updateDoc, setDoc, getDoc } from "firebase/firestore";  
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { db, auth, storage } from "../firebaseConfig"; // ✅ Ensure correct imports
+import { db, auth, storage } from "../firebaseConfig"; 
 
 const Profile = () => {
   const router = useRouter();
   const [userInfo, setUserInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [applicationStatus, setApplicationStatus] = useState(null); // 🔥 Track cleaner application status
 
   // 🔥 **Subscribe to Real-Time User Data**
   useEffect(() => {
@@ -39,93 +40,57 @@ const Profile = () => {
           setLoading(false);
         });
 
-        return () => unsubscribeFirestore();  // ✅ Properly unsubscribing from Firestore listener
+        // 🔥 Check if the user has already applied to be a cleaner
+        const applicationRef = doc(db, "cleanerApplications", user.uid);
+        getDoc(applicationRef).then((docSnapshot) => {
+          if (docSnapshot.exists()) {
+            setApplicationStatus(docSnapshot.data().status); 
+          }
+        });
+
+        return () => unsubscribeFirestore();
       } else {
         setError("User not logged in.");
         setLoading(false);
       }
     });
 
-    return () => unsubscribeAuth();  // ✅ Properly unsubscribing from auth listener
+    return () => unsubscribeAuth();
   }, []);
 
-  // 🔥 **Upload Profile Picture to Firebase Storage**
-  const uploadProfilePicture = async (uri) => {
+  // 🔥 **Apply to Become a Cleaner**
+  const applyToBeCleaner = async () => {
     try {
-      if (!uri) throw new Error("No image selected");
-  
       const user = auth.currentUser;
-      if (!user) throw new Error("User not logged in");
-  
-      let localUri = uri;
-  
-      // 🔥 Check if the image is from iCloud (iOS) and download it locally
-      if (!uri.startsWith("file://")) {
-        console.log("Downloading image from iCloud...");
-        const downloadedFile = await FileSystem.downloadAsync(uri, FileSystem.documentDirectory + "tempImage.jpg");
-        localUri = downloadedFile.uri;
-        console.log("Downloaded to:", localUri);
-      }
-  
-      // 🔥 Convert file to a blob
-      const response = await fetch(localUri);
-      const blob = await response.blob();
-  
-      // 🔥 Upload to Firebase Storage
-      const filename = `profilePictures/${user.uid}/${Date.now()}.jpg`;
-      const storageRef = ref(storage, filename);
-      const uploadTask = uploadBytesResumable(storageRef, blob);
-  
-      uploadTask.on(
-        "state_changed",
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          console.log(`Upload is ${progress}% done`);
-        },
-        (error) => {
-          console.error("Upload error:", error);
-          Alert.alert("Upload Error", "Failed to upload profile picture.");
-        },
-        async () => {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          console.log("File available at", downloadURL);
-  
-          // 🔥 Update Firestore with new profile picture URL
-          const userRef = doc(db, "users", user.uid);
-          await updateDoc(userRef, { profilePictureUrl: downloadURL });  // ✅ Fixed missing updateDoc
-
-          // ✅ Update local state to reflect the new profile picture
-          setUserInfo(prev => ({ ...prev, profilePictureUrl: downloadURL }));
-
-          Alert.alert("Success", "Profile picture updated!");
-        }
-      );
-    } catch (error) {
-      console.error("Error uploading profile picture:", error);
-      Alert.alert("Upload Error", "An error occurred while uploading the picture.");
-    }
-  };
-
-  // 🔥 **Pick Image and Upload**
-  const pickImage = async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission required', 'Allow access to photos to upload a profile picture.');
+      if (!user) {
+        Alert.alert("Error", "You must be logged in to apply.");
         return;
       }
 
-      const result = await ImagePicker.launchImageLibraryAsync({
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 1,
+      // 🔥 Reference to the cleaner application in Firestore
+      const applicationRef = doc(db, "cleanerApplications", user.uid);
+      const docSnapshot = await getDoc(applicationRef);
+
+      if (docSnapshot.exists()) {
+        Alert.alert("Application Pending", "Your application is already being reviewed.");
+        return;
+      }
+
+      // 🔥 Create a new application in Firestore
+      await setDoc(applicationRef, {
+        userId: user.uid,
+        email: user.email,
+        fullName: userInfo?.fullName || "N/A",
+        profilePictureUrl: userInfo?.profilePictureUrl || "",
+        status: "pending",
+        appliedAt: new Date(),
       });
 
-      if (!result.canceled && result.assets?.length > 0) {
-        uploadProfilePicture(result.assets[0].uri);
-      }
+      setApplicationStatus("pending");
+      Alert.alert("Success", "Your application has been submitted for review.");
     } catch (error) {
-      Alert.alert('Error', 'An error occurred while selecting the image.');
+      console.error("Error applying to be a cleaner:", error);
+      Alert.alert("Error", "An error occurred while submitting your application.");
     }
   };
 
@@ -165,7 +130,7 @@ const Profile = () => {
       <Text style={styles.header}>Profile Info</Text>
 
       {/* Profile Picture */}
-      <TouchableOpacity onPress={pickImage}>
+      <TouchableOpacity>
         {userInfo?.profilePictureUrl ? (
           <Image source={{ uri: userInfo.profilePictureUrl }} style={styles.profilePicture} />
         ) : (
@@ -180,6 +145,15 @@ const Profile = () => {
 
       <Text style={styles.infoLabel}>Email:</Text>
       <Text style={styles.infoValue}>{userInfo?.email || "N/A"}</Text>
+
+      {/* Cleaner Application Status */}
+      {applicationStatus === "pending" ? (
+        <Text style={styles.pendingText}>Your cleaner application is under review.</Text>
+      ) : (
+        <TouchableOpacity style={styles.cleanerButton} onPress={applyToBeCleaner}>
+          <Text style={styles.cleanerButtonText}>Apply to be a Cleaner</Text>
+        </TouchableOpacity>
+      )}
 
       <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
         <Text style={styles.signOutButtonText}>Sign Out</Text>
@@ -197,6 +171,9 @@ const styles = StyleSheet.create({
   profilePicture: { width: 150, height: 150, borderRadius: 75, backgroundColor: '#ddd', marginBottom: 20 },
   placeholder: { justifyContent: 'center', alignItems: 'center' },
   placeholderText: { fontSize: 16, color: '#555' },
+  pendingText: { fontSize: 16, color: '#FFA500', marginTop: 10, fontWeight: "bold" },
+  cleanerButton: { backgroundColor: '#28A745', paddingVertical: 12, paddingHorizontal: 25, borderRadius: 8, marginTop: 20 },
+  cleanerButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   signOutButton: { marginTop: 20, backgroundColor: '#FF3B30', paddingVertical: 12, paddingHorizontal: 25, borderRadius: 8 },
   signOutButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   errorText: { color: 'red', fontSize: 16, marginBottom: 20 },

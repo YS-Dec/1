@@ -3,8 +3,16 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import logo from "@/assets/images/logo.png";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
-import { signInWithEmailAndPassword, sendPasswordResetEmail, signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "../firebaseConfig.js";  // Correct import
+import { 
+  signInWithEmailAndPassword, 
+  sendPasswordResetEmail, 
+  sendEmailVerification, 
+  signOut 
+} from "firebase/auth";
+import { doc, getDocs, getDoc, updateDoc, collection, query, where } from "firebase/firestore";
+import { db, auth, storage } from "../firebaseConfig"; 
+
+
 
 const LoginPage = () => {
   const router = useRouter();
@@ -12,50 +20,105 @@ const LoginPage = () => {
   // Manage email and password states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false); // Add loading state
 
-
-  // Login handler function
+  // 🔥 **Login Handler with Email Verification Check**
   const handleLogin = async () => {
-  if (!email || !password) {
-    Alert.alert("Error", "Please enter both email and password.");
-    return;
-  }
-  try {
-    // Firebase authentication
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
+    if (!email || !password) {
+      Alert.alert("Error", "Please enter both email and password.");
+      return;
+    }
+  
+    try {
+      console.log("🚀 Attempting login...");
+  
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      if (!user) {
+        throw new Error("Authentication failed. No user returned.");
+      }
+  
+      console.log("✅ Firebase Auth User:", user.email);
+  
+      // 🔥 **Ensure Firebase refreshes email verification status**
+      await user.reload();
+      const refreshedUser = auth.currentUser;
+      
+      if (!refreshedUser.emailVerified) {
+        console.log("❌ Email is not verified!");
+        Alert.alert("Email Not Verified", "Please check your email and verify your account before logging in.");
+        await signOut(auth);  // Log the user out if not verified
+        return;
+      }
 
-    console.log("User logged in:", user);
-    await AsyncStorage.setItem('email', email);
-    await AsyncStorage.setItem('authToken', user.accessToken); // Store Firebase auth token
+      console.log("✅ Email verified, proceeding with login...");
+      Alert.alert("Success", "Login successful!");
+      router.replace("(tabs)");
+  
+      console.log("✅ User logged in successfully!");
+      await AsyncStorage.setItem("email", email);
+      await AsyncStorage.setItem("authToken", user.accessToken);
+    } catch (error) {
+      console.error("❌ Login failed:", error);
+      Alert.alert("Login Error", error.message);
+    }
+  };
 
-    Alert.alert("Success", "Login successful!");
-    router.replace("(tabs)"); // Navigate to home
-  } catch (error) {
-    console.error("Login failed:", error);
-    Alert.alert("Login Error", error.message);
-  }
-};
+  // 🔥 **Handle Forgot Password**
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert("Error", "Please enter your email address.");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      Alert.alert("Success", "Password reset email sent! Check your inbox.");
+    } catch (error) {
+      console.error("❌ Password Reset Error:", error);
+      Alert.alert("Error", error.message);
+    }
+  };
 
-const handleForgotPassword = async () => {
-  if (!email) {
-    Alert.alert("Error", "Please enter your email address in the above.");
-    return;
-  }
-  try {
-    await sendPasswordResetEmail(auth, email);
-    Alert.alert("Success", "Password reset email sent! Check your inbox.");
-  } catch (error) {
-    console.error("Password Reset Error:", error);
-    Alert.alert("Error", error.message);
-  }
-};
+  // 🔥 **Resend Verification Email**
+  const handleResendVerification = async (emailInput, passwordInput) => {
+    try {  
+      if (!email || !password) {
+        Alert.alert("Error", "Please enter both email and password.");
+        return;
+      }
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      if (!user) {
+        throw new Error("Authentication failed. No user returned. Please Signup first.");
+      }
+
+      console.log("✅ Firebase Auth User:", user.email);
+
+      await user.reload();
+      const refreshedUser = auth.currentUser;
   
 
-const goToSignUp = () => {
-  router.push('/signup');
-};
+      // ✅ **Check if already verified**
+      if (refreshedUser.emailVerified) {
+        Alert.alert("Already Verified", "Your email is already verified.");
+      }
+      else if (!refreshedUser.emailVerified) {
+        await sendEmailVerification(user);
+        Alert.alert("Verification email sended.");
+        console.log("✅ Verification email resent to:", user.email);
+        await signOut(auth);  // Log the user out if not verified
+        return;
+      }  
+    } catch (error) {
+      console.error("❌ Resend Verification Error:", error);
+      Alert.alert("Error", error.message);
+    }
+  };
+
+  // 🔥 **Go to Sign-Up Page**
+  const goToSignUp = () => {
+    router.push('/signup');
+  };
 
   return (
     <View style={styles.container}>
@@ -82,20 +145,28 @@ const goToSignUp = () => {
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
+
       <TouchableOpacity style={styles.signupButton} onPress={goToSignUp}>
         <Text style={styles.signupText}>Don't have an account? Sign Up</Text>
       </TouchableOpacity>
+
       <TouchableOpacity style={styles.forgotPasswordButton} onPress={handleForgotPassword}>
         <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.resendVerificationButton} onPress={handleResendVerification}>
+        <Text style={styles.resendVerificationText}>Resend Verification Email</Text>
       </TouchableOpacity>
     </View>
   );
 };
 
+// 🔥 **Styles**
 const styles = StyleSheet.create({
   container: { 
     justifyContent: 'flex-start', 
-    flex:1, alignItems: 'center', 
+    flex:1, 
+    alignItems: 'center', 
     padding: 20, 
     backgroundColor: '#FFFFFF'
   },
@@ -147,7 +218,15 @@ const styles = StyleSheet.create({
     color: '#007BFF',
     fontSize: 16,
     textDecorationLine: 'underline',
-  }
+  },
+  resendVerificationButton: {
+    marginTop: 10,
+  },
+  resendVerificationText: {
+    color: '#FF5733',
+    fontSize: 16,
+    textDecorationLine: 'underline',
+  },
 });
 
 export default LoginPage;

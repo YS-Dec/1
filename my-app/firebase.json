@@ -1,14 +1,11 @@
 {
   "hosting": {
-    "public": "public",
+    "public": "dist",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ]
-  },
-  "storage": {
-    "rules": "storage.rules"
   },
   "emulators": {
     "dataconnect": {
@@ -17,12 +14,5 @@
   },
   "dataconnect": {
     "source": "dataconnect"
-  },
-  "firestore": {
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
-  },
-  "database": {
-    "rules": "database.rules.json"
   }
 }
