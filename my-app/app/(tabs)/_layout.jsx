@@ -23,11 +23,20 @@ export default function TabLayout() {
     >
       {/* Home Tab */}
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
           title: 'Home',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Request',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="paper-plane-outline" size={size} color={color} />
           ),
         }}
       />

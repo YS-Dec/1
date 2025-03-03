@@ -76,6 +76,39 @@ const submitCleaningRequest = async (location, date, time, additionalNotes, rout
   }
 };
 
+// Function to get the user's location
+  const fetchLocation = async () => {
+    setLoading(true);
+
+    // Request permission
+    let { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Denied", "Location access is needed to autofill your address.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Get GPS coordinates
+      let { coords } = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = coords;
+
+      // Convert coordinates to an address
+      let addressArray = await Location.reverseGeocodeAsync({ latitude, longitude });
+
+      if (addressArray.length > 0) {
+        let address = `${addressArray[0].name}, ${addressArray[0].city}, ${addressArray[0].region}`;
+        setLocation(address);
+      } else {
+        Alert.alert("Error", "Could not fetch address");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to fetch location");
+    }
+
+    setLoading(false);
+  };
+
 
 const RequestCleaning = () => {
   const router = useRouter();
