@@ -1,0 +1,467 @@
+import React, { useState, useRef } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Platform,
+} from "react-native";
+import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
+import { useRouter } from "expo-router";
+import { collection, addDoc } from "firebase/firestore";
+import { db, auth } from "../firebaseConfig";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import GOOGLE_KEY from "../googleConfig";
+import * as Location from "expo-location";
+import axios from "axios";
+import Feather from "react-native-vector-icons/Feather";
+
+// For web date/time pickers
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+
+const RequestCleaning = () => {
+  const router = useRouter();
+
+  const [location, setLocation] = useState("");
+  const [date, setDate] = useState(new Date());
+  const [time, setTime] = useState(new Date());
+  const [additionalNotes, setAdditionalNotes] = useState("");
+
+  // For showing success or error popups:
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [showErrorPopup, setShowErrorPopup] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const locationRef = useRef(null);
+
+  // ----- CLEAR ALL FIELDS -----
+  const clearForm = () => {
+    setLocation("");
+    setDate(new Date());
+    setTime(new Date());
+    setAdditionalNotes("");
+    locationRef.current?.setAddressText("");
+  };
+
+  // ----- GET CURRENT LOCATION -----
+  const getCurrentLocation = async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        showError("Location permission is required. Please grant permission.");
+        return;
+      }
+      let userLocation = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = userLocation.coords;
+
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_KEY.GOOGLE_MAPS_API_KEY}`
+      );
+
+      if (response.data.status === "OK") {
+        const address = response.data.results[0].formatted_address;
+        setLocation(address);
+        locationRef.current?.setAddressText(address);
+      } else {
+        showError("Unable to fetch address from coordinates.");
+      }
+    } catch (error) {
+      console.error("Failed to get location:", error);
+      showError("Failed to get current location. Please try again.");
+    }
+  };
+
+  // ----- SHOW ERROR POPUP -----
+  const showError = (message) => {
+    setErrorMessage(message);
+    setShowErrorPopup(true);
+  };
+
+  // ----- CLOSE ERROR POPUP -----
+  const closeErrorPopup = () => {
+    setShowErrorPopup(false);
+  };
+
+  // ----- SUBMIT CLEANING REQUEST -----
+  const submitCleaningRequest = async () => {
+    const user = auth.currentUser;
+    // 1) Check if user is logged in
+    if (!user) {
+      showError("You must be logged in to submit a request.");
+      return;
+    }
+
+    // 2) Check required fields
+    if (!location || !date || !time) {
+      showError("Please fill out all required fields.");
+      return;
+    }
+
+    // 3) Validate date/time is in the future
+    const selectedDateTime = new Date(date);
+    selectedDateTime.setHours(time.getHours());
+    selectedDateTime.setMinutes(time.getMinutes());
+
+    if (selectedDateTime <= new Date()) {
+      showError("Invalid time: You cannot select a past date or time.");
+      return;
+    }
+
+    // 4) Check user email from AsyncStorage
+    let userEmail;
+    try {
+      userEmail = await AsyncStorage.getItem("email");
+      if (!userEmail) {
+        showError("No user email found. Please log in again.");
+        return;
+      }
+    } catch (err) {
+      console.error("Error reading email from AsyncStorage:", err);
+      showError("Error accessing user email. Please log in again.");
+      return;
+    }
+
+    try {
+      // 5) Build the request object
+      const request = {
+        userId: user.uid,
+        userEmail,
+        location,
+        date: date.toISOString().split("T")[0], // e.g. 2025-03-08
+        time: time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true }),
+        additionalNotes: additionalNotes || "No additional notes",
+        status: "pending",
+        timestamp: new Date(),
+      };
+
+      // 6) Store in Firestore
+      await addDoc(collection(db, "cleaningRequests"), request);
+
+      // 7) Show success popup
+      setShowSuccessPopup(true);
+    } catch (error) {
+      console.error("Failed to submit request:", error);
+      showError("Failed to submit request. Please try again.");
+    }
+  };
+
+  // ----- CLOSE SUCCESS POPUP -----
+  const closeSuccessPopup = () => {
+    setShowSuccessPopup(false);
+    clearForm();
+    // If you want to navigate after clearing:
+    // router.replace("(tabs)");
+  };
+
+  return (
+    <>
+      {/* On Web, ensure date/time pickers pop-up on top */}
+      {Platform.OS === "web" && (
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              .datePickerPopper {
+                z-index: 9999999 !important;
+              }
+            `,
+          }}
+        />
+      )}
+
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <View style={styles.formWrapper}>
+          <Text style={styles.title}>Request a Cleaning Service</Text>
+
+          {/* Location */}
+          <View style={styles.section}>
+            <Feather name="map-pin" size={20} color="#555" />
+            <View style={styles.locationRow}>
+              <GooglePlacesAutocomplete
+                ref={locationRef}
+                placeholder="Enter location"
+                fetchDetails={true}
+                enablePoweredByContainer={false}
+                onPress={(data) => setLocation(data.description)}
+                query={{
+                  key: GOOGLE_KEY.GOOGLE_MAPS_API_KEY,
+                  language: "en",
+                }}
+                styles={{
+                  container: styles.autocompleteContainer,
+                  textInput: styles.input,
+                  listView: {
+                    position: "absolute",
+                    top: 55,
+                    zIndex: 1001,
+                    backgroundColor: "#fff",
+                    elevation: 5,
+                  },
+                }}
+              />
+              <TouchableOpacity style={styles.locationButton} onPress={getCurrentLocation}>
+                <Text style={styles.pinEmoji}>📍</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Date Picker */}
+          <View style={styles.section}>
+            <Feather name="calendar" size={20} color="#555" />
+            {Platform.OS === "web" ? (
+              <View style={styles.datePickerWrapper}>
+                <DatePicker
+                  selected={date}
+                  onChange={(newDate) => setDate(newDate)}
+                  minDate={new Date()}
+                  dateFormat="MM/dd/yyyy"
+                  popperPlacement="top-start"
+                  popperClassName="datePickerPopper"
+                  popperProps={{ strategy: "fixed" }}
+                  portalId="root-portal"
+                  customInput={
+                    <TextInput
+                      style={[styles.input, { width: "100%" }]}
+                      value={date.toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                      })}
+                      onChange={() => {}}
+                    />
+                  }
+                />
+              </View>
+            ) : (
+              <TouchableOpacity onPress={() => {}} style={styles.input}>
+                <Text>
+                  {date.toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                  })}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Time Picker */}
+          <View style={styles.section}>
+            <Feather name="clock" size={20} color="#555" />
+            {Platform.OS === "web" ? (
+              <View style={styles.datePickerWrapper}>
+                <DatePicker
+                  selected={time}
+                  onChange={(newTime) => setTime(newTime)}
+                  showTimeSelect
+                  showTimeSelectOnly
+                  timeIntervals={15}
+                  timeCaption="Time"
+                  dateFormat="hh:mm aa"
+                  popperPlacement="top-start"
+                  popperClassName="datePickerPopper"
+                  popperProps={{ strategy: "fixed" }}
+                  portalId="root-portal"
+                  customInput={
+                    <TextInput
+                      style={[styles.input, { width: "100%" }]}
+                      value={time.toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: true,
+                      })}
+                      onChange={() => {}}
+                    />
+                  }
+                />
+              </View>
+            ) : (
+              <TouchableOpacity onPress={() => {}} style={styles.input}>
+                <Text>
+                  {time.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true,
+                  })}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Additional Notes */}
+          <View style={styles.section}>
+            <Feather name="file-text" size={20} color="#555" />
+            <TextInput
+              style={[styles.input, { height: 100 }]}
+              placeholder="Additional notes (optional)"
+              value={additionalNotes}
+              onChangeText={setAdditionalNotes}
+              multiline
+            />
+          </View>
+
+          {/* Submit Button */}
+          <TouchableOpacity style={styles.button} onPress={submitCleaningRequest}>
+            <Text style={styles.buttonText}>
+              <Feather name="send" size={16} color="#fff" /> Submit Request
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+
+      {/* --- SUCCESS POPUP (Overlay) --- */}
+      {showSuccessPopup && (
+        <View style={styles.popupOverlay}>
+          <View style={styles.popupContainer}>
+            <Feather name="check-circle" size={64} color="#28a745" style={{ marginBottom: 20 }} />
+            <Text style={styles.popupTitle}>Success!</Text>
+            <Text style={styles.popupMessage}>Your cleaning request has been submitted.</Text>
+            <TouchableOpacity style={styles.popupButton} onPress={closeSuccessPopup}>
+              <Text style={styles.popupButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* --- ERROR POPUP (Overlay) --- */}
+      {showErrorPopup && (
+        <View style={styles.popupOverlay}>
+          <View style={styles.popupContainer}>
+            <Feather name="alert-triangle" size={64} color="#d9534f" style={{ marginBottom: 20 }} />
+            <Text style={styles.popupTitle}>Error</Text>
+            <Text style={styles.popupMessage}>{errorMessage}</Text>
+            <TouchableOpacity style={styles.popupButton} onPress={closeErrorPopup}>
+              <Text style={styles.popupButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+    </>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    backgroundColor: "#fff",
+    alignItems: "center",
+  },
+  formWrapper: {
+    width: "100%",
+    maxWidth: 500,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 30,
+  },
+  section: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 15,
+    gap: 10,
+    width: "100%",
+  },
+  locationRow: {
+    flex: 1,
+    flexDirection: "row",
+  },
+  autocompleteContainer: {
+    flex: 1,
+    marginRight: 10,
+  },
+  locationButton: {
+    backgroundColor: "#fceaea",
+    padding: 14,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    height: 55,
+    width: 55,
+    borderWidth: 2,
+    borderColor: "#ff4d4d",
+  },
+  pinEmoji: {
+    fontSize: 28,
+  },
+  input: {
+    flex: 1,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    backgroundColor: "#f9f9f9",
+    fontSize: 16,
+  },
+  datePickerWrapper: {
+    flex: 1,
+  },
+
+  // Nice button styling
+  button: {
+    marginTop: 20,
+    backgroundColor: "#FF5722",
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5, // For Android
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+
+  // --- Overlay styling (used by both success and error) ---
+  popupOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  popupContainer: {
+    width: 300,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 20,
+    alignItems: "center",
+  },
+  popupTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  popupMessage: {
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 20,
+    color: "#555",
+  },
+  popupButton: {
+    backgroundColor: "#007BFF",
+    paddingHorizontal: 25,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  popupButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+});
+
+export default RequestCleaning;
