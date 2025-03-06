@@ -22,6 +22,7 @@ const Profile = () => {
   const [userInfo, setUserInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [uploading, setUploading] = useState(false); // ✅ This fixes the error
   const [applicationStatus, setApplicationStatus] = useState(null); // 🔥 Track cleaner application status
 
   // 🔥 **Subscribe to Real-Time User Data**
@@ -57,6 +58,98 @@ const Profile = () => {
 
     return () => unsubscribeAuth();
   }, []);
+  
+  const pickImage = async () => {
+    try {
+      // 🔥 Request permission before opening image picker
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'Allow access to photos to upload a profile picture.');
+        return;
+      }
+  
+      // 🔥 Open the image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+  
+      // 🔥 Check if user canceled
+      if (result.canceled || !result.assets?.length) {
+        console.log("Image selection canceled.");
+        return;
+      }
+  
+      // 🔥 Upload the selected image
+      setUploading(true); // Show loading
+      await uploadProfilePicture(result.assets[0].uri);
+    } catch (error) {
+      console.error("Error picking image:", error);
+      Alert.alert("Error", "An error occurred while selecting the image.");
+      setUploading(false);
+    }
+  };
+  
+  const uploadProfilePicture = async (uri) => {
+    try {
+      if (!uri) throw new Error("No image selected");
+  
+      const user = auth.currentUser;
+      if (!user) throw new Error("User not logged in");
+  
+      let localUri = uri;
+  
+      // 🔥 Check if the image is from iCloud (iOS) and download it locally
+      if (!uri.startsWith("file://")) {
+        console.log("Downloading image from iCloud...");
+        const downloadedFile = await FileSystem.downloadAsync(uri, FileSystem.documentDirectory + "tempImage.jpg");
+        localUri = downloadedFile.uri;
+        console.log("Downloaded to:", localUri);
+      }
+  
+      // 🔥 Convert file to a blob
+      const response = await fetch(localUri);
+      const blob = await response.blob();
+  
+      // 🔥 Upload to Firebase Storage (Overwrites old picture)
+      const filename = `profilePictures/${user.uid}/${Date.now()}.jpg`;
+      const storageRef = ref(storage, filename);
+      const uploadTask = await uploadBytesResumable(storageRef, blob);
+  
+      uploadTask.on(
+        "state_changed",
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          console.log(`Upload is ${progress}% done`);
+        },
+        (error) => {
+          console.error("Upload error:", error);
+          Alert.alert("Upload Error", "Failed to upload profile picture.");
+          setUploading(false);
+        },
+        async () => {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          console.log("File available at", downloadURL);
+  
+          // 🔥 Update Firestore with new profile picture URL
+          const userRef = doc(db, "users", user.uid);
+          await updateDoc(userRef, { profilePictureUrl: downloadURL });  // ✅ Fixed missing updateDoc
+
+  
+          // ✅ Update UI
+          setUserInfo(prev => ({ ...prev, profilePictureUrl: downloadURL }));
+
+          Alert.alert("Success", "Profile picture updated!");
+        }
+      );
+    } catch (error) {
+      console.error("Error uploading profile picture:", error);
+      Alert.alert("Upload Error", "An error occurred while uploading the picture.");
+      setUploading(false);
+    }
+  };
 
   // 🔥 **Apply to Become a Cleaner**
   const applyToBeCleaner = async () => {
@@ -110,8 +203,8 @@ const Profile = () => {
       <View style={styles.container}>
         <ActivityIndicator size="large" color="#007BFF" />
       </View>
-    );
-  }
+    )
+  };
 
   // **Error State**
   if (error) {
@@ -130,7 +223,7 @@ const Profile = () => {
       <Text style={styles.header}>Profile Info</Text>
 
       {/* Profile Picture */}
-      <TouchableOpacity>
+      <TouchableOpacity onPress={pickImage}>
         {userInfo?.profilePictureUrl ? (
           <Image source={{ uri: userInfo.profilePictureUrl }} style={styles.profilePicture} />
         ) : (
