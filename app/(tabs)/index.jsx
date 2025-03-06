@@ -1,194 +1,199 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import React, { useState, useRef } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Platform,
+  Alert,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { collection, addDoc } from "firebase/firestore";
-import { db, auth } from "../firebaseConfig"; // Import Firestore
+import { db, auth } from "../firebaseConfig";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
+import GOOGLE_KEY from "../googleConfig";
+import * as Location from "expo-location";
+import axios from "axios";
+import Feather from "react-native-vector-icons/Feather";
 
+// Web Date Picker
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
-const submitCleaningRequest = async (location, date, time, additionalNotes, router) => {
-  console.log("🟢 Button clicked! Starting request submission..."); // ✅ Debugging log
+const RequestCleaning = () => {
+  const router = useRouter();
+  const locationRef = useRef(null);
+  const [location, setLocation] = useState("");
+  const [date, setDate] = useState(new Date());
+  const [time, setTime] = useState(new Date());
+  const [additionalNotes, setAdditionalNotes] = useState("");
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [showErrorPopup, setShowErrorPopup] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-   // ✅ Get the authenticated user
-   const user = auth.currentUser;  // Check logged-in user
- 
-   if (!user) {
-     console.error("❌ User is NOT authenticated!");
-     Alert.alert("Error", "You must be logged in to submit a request.");
-     return;
-   }
- 
-   console.log("✅ User authenticated:", user.email);
+  // ----- CLEAR ALL FIELDS -----
+  const clearForm = () => {
+    setLocation("");
+    setDate(new Date());
+    setTime(new Date());
+    setAdditionalNotes("");
+    locationRef.current?.setAddressText("");
+  };
 
+  // ----- GET CURRENT LOCATION -----
+  const getCurrentLocation = async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        showError("Location permission is required. Please grant permission.");
+        return;
+      }
+      let userLocation = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = userLocation.coords;
 
-  if (!location || !date || !time) {
-    console.log("❌ Missing fields:", { location, date, time });
-    Alert.alert("Error", "Please fill out all required fields.");
-    return;
-  }
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_KEY.GOOGLE_MAPS_API_KEY}`
+      );
 
-  console.log("✅ All fields filled, proceeding with submission...");
+      if (response.data.status === "OK") {
+        const address = response.data.results[0].formatted_address;
+        setLocation(address);
+        locationRef.current?.setAddressText(address);
+      } else {
+        showError("Unable to fetch address from coordinates.");
+      }
+    } catch (error) {
+      console.error("Failed to get location:", error);
+      showError("Failed to get current location. Please try again.");
+    }
+  };
 
+  // ----- SHOW ERROR POPUP -----
+  const showError = (message) => {
+    setErrorMessage(message);
+    setShowErrorPopup(true);
+  };
 
-  try {
-    const userEmail = await AsyncStorage.getItem("email"); // Get user email
+  // ----- CLOSE ERROR POPUP -----
+  const closeErrorPopup = () => {
+    setShowErrorPopup(false);
+  };
 
-    if (!userEmail) {
-      console.error("❌ No user email found in AsyncStorage");
-      Alert.alert("Error", "No user email found. Please log in again.");
+  // ----- SUBMIT CLEANING REQUEST -----
+  const submitCleaningRequest = async () => {
+    const user = auth.currentUser;
+
+    if (!user) {
+      showError("You must be logged in to submit a request.");
       return;
     }
 
-    console.log("📤 Submitting request...");
-    console.log("User Email:", userEmail);
-    console.log("Location:", location);
-    console.log("Date:", date);
-    console.log("Time:", time);
-    console.log("Notes:", additionalNotes);
-
-    // ✅ Ensure Firestore is initialized
-    if (!db) {
-      console.error("❌ Firestore is NOT initialized!");
-      Alert.alert("Error", "Firestore is not properly set up.");
+    if (!location || !date || !time) {
+      showError("Please fill out all required fields.");
       return;
     }
 
-    // ✅ Fix field names (use lowercase for consistency)
-    const request = {
-      userId: user.uid,
-      userEmail: userEmail,
-      location: location,  // ✅ Lowercase
-      date: date,  // ✅ Lowercase
-      time: time,  // ✅ Lowercase
-      additionalNotes: additionalNotes || "No additional notes", // ✅ Lowercase
-      status: "pending",
-      timestamp: new Date(), // ✅ Correct timestamp format
-    };
+    const selectedDateTime = new Date(date);
+    selectedDateTime.setHours(time.getHours());
+    selectedDateTime.setMinutes(time.getMinutes());
 
-    const docRef = await addDoc(collection(db, "cleaningRequests"), request);
-    console.log("✅ Request submitted successfully! Document ID:", docRef.id);
+    if (selectedDateTime <= new Date()) {
+      showError("Invalid time: You cannot select a past date or time.");
+      return;
+    }
 
-    Alert.alert("Success", "Cleaning request submitted!");
-    router.replace("(tabs)");
-  } catch (error) {
-    console.error("❌ Error submitting request:", error);
-    Alert.alert("Error", "Failed to submit request. Please try again.");
-  }
-};
-
-// Function to get the user's location
-  const fetchLocation = async () => {
-    setLoading(true);
-
-    // Request permission
-    let { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission Denied", "Location access is needed to autofill your address.");
-      setLoading(false);
+    let userEmail;
+    try {
+      userEmail = await AsyncStorage.getItem("email");
+      if (!userEmail) {
+        showError("No user email found. Please log in again.");
+        return;
+      }
+    } catch (err) {
+      showError("Error accessing user email. Please log in again.");
       return;
     }
 
     try {
-      // Get GPS coordinates
-      let { coords } = await Location.getCurrentPositionAsync({});
-      const { latitude, longitude } = coords;
+      const request = {
+        userId: user.uid,
+        userEmail,
+        location,
+        date: date.toISOString().split("T")[0],
+        time: time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true }),
+        additionalNotes: additionalNotes || "No additional notes",
+        status: "pending",
+        timestamp: new Date(),
+      };
 
-      // Convert coordinates to an address
-      let addressArray = await Location.reverseGeocodeAsync({ latitude, longitude });
+      await addDoc(collection(db, "cleaningRequests"), request);
 
-      if (addressArray.length > 0) {
-        let address = `${addressArray[0].name}, ${addressArray[0].city}, ${addressArray[0].region}`;
-        setLocation(address);
-      } else {
-        Alert.alert("Error", "Could not fetch address");
-      }
+      setShowSuccessPopup(true);
     } catch (error) {
-      Alert.alert("Error", "Failed to fetch location");
+      console.error("Failed to submit request:", error);
+      showError("Failed to submit request. Please try again.");
     }
-
-    setLoading(false);
   };
 
-
-const RequestCleaning = () => {
-  const router = useRouter();
-  const [location, setLocation] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [additionalNotes, setAdditionalNotes] = useState("");
+  // ----- CLOSE SUCCESS POPUP -----
+  const closeSuccessPopup = () => {
+    setShowSuccessPopup(false);
+    clearForm();
+  };
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Request a Cleaning Service</Text>
 
-      <TextInput
-        style={styles.input}
+      {/* Location Input */}
+      <GooglePlacesAutocomplete
+        ref={locationRef}
         placeholder="Enter location"
-        value={location}
-        onChangeText={setLocation}
+        fetchDetails={true}
+        enablePoweredByContainer={false}
+        onPress={(data) => setLocation(data.description)}
+        query={{ key: GOOGLE_KEY.GOOGLE_MAPS_API_KEY, language: "en" }}
+        styles={{ textInput: styles.input }}
       />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Enter date (YYYY-MM-DD)"
-        value={date}
-        onChangeText={setDate}
-      />
+      {/* Date Picker */}
+      {Platform.OS === "web" ? (
+        <DatePicker selected={date} onChange={(newDate) => setDate(newDate)} minDate={new Date()} />
+      ) : (
+        <TouchableOpacity>
+          <Text>{date.toLocaleDateString()}</Text>
+        </TouchableOpacity>
+      )}
 
-      <TextInput
-        style={styles.input}
-        placeholder="Enter time (HH:MM AM/PM)"
-        value={time}
-        onChangeText={setTime}
-      />
+      {/* Time Picker */}
+      <TextInput style={styles.input} value={time.toLocaleTimeString()} editable={false} />
 
+      {/* Additional Notes */}
       <TextInput
-        style={styles.input}
+        style={[styles.input, { height: 100 }]}
         placeholder="Additional notes (optional)"
         value={additionalNotes}
         onChangeText={setAdditionalNotes}
         multiline
       />
 
-      <TouchableOpacity
-        style={styles.button} onPress={() => submitCleaningRequest(location, date, time, additionalNotes, router)}>
-      <Text style={styles.buttonText}>Submit Request</Text>
+      {/* Submit Button */}
+      <TouchableOpacity style={styles.button} onPress={submitCleaningRequest}>
+        <Text style={styles.buttonText}>Submit Request</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    justifyContent: "center", 
-    padding: 20, 
-    backgroundColor: "#fff" 
-  },
-  title: { 
-    fontSize: 24, 
-    fontWeight: "bold", 
-    textAlign: "center", 
-    marginBottom: 20 
-  },
-  input: { 
-    width: "100%", 
-    padding: 10, 
-    borderWidth: 1, 
-    borderRadius: 5, 
-    marginBottom: 15 
-  },
-  button: { 
-    backgroundColor: "#007BFF", 
-    padding: 15, 
-    borderRadius: 5, 
-    alignItems: "center" 
-  },
-  buttonText: { 
-    color: "#fff", 
-    fontSize: 16, 
-    fontWeight: "bold" 
-  },
+  container: { padding: 20, backgroundColor: "#fff" },
+  title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
+  input: { padding: 14, borderWidth: 1, borderRadius: 8, marginBottom: 15 },
+  button: { backgroundColor: "#007BFF", padding: 15, borderRadius: 8 },
+  buttonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
 });
 
 export default RequestCleaning;

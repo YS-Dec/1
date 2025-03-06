@@ -40,7 +40,6 @@ export default function TabLayout() {
           ),
         }}
       />
-
       {/* Profile Tab (Tab bar hidden) */}
       <Tabs.Screen
         name="profile"
