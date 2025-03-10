@@ -31,6 +31,7 @@ export default function TabLayout() {
           ),
         }}
       />
+      {/* requesting tab */}
       <Tabs.Screen
         name="index"
         options={{
@@ -40,6 +41,18 @@ export default function TabLayout() {
           ),
         }}
       />
+
+      {/* available requests tab */}
+      <Tabs.Screen
+        name="availableRequests"
+        options={{
+          title: "Available Requests",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="list-outline" size={size} color={color} />
+          ),
+        }}
+      />
+
       {/* Profile Tab (Tab bar hidden) */}
       <Tabs.Screen
         name="profile"
