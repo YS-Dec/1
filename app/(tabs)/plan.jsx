@@ -93,8 +93,11 @@ const Plan = () => {
   const renderRequest = ({ item }) => (
     <View style={[styles.requestCard, { borderColor: ColorList }]}>
       <Text style={[styles.serviceType, { color: ColorList }]}>{item.location}</Text>
+      <View style={styles.rowContainer}>
       <Text style={styles.details}>📅 Date: {item.date}</Text>
-      <Text style={styles.details}>🕒 Time: {item.time}</Text>
+      {/*<Text style={styles.details}>🕒 Time: {item.time}</Text>*/}
+        <Text style={styles.timeText}>{item.time}</Text>
+      </View>
       <Text style={styles.details}>📝 Notes: {item.additionalNotes || "N/A"}</Text>
       <Text style={styles.status}>Status: {item.status}</Text>
 
@@ -151,8 +154,25 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     elevation: 3,
   },
-  serviceType: { fontSize: 18, fontWeight: "bold" },
-  details: { fontSize: 14, color: "#555", marginTop: 5 },
+  serviceType: { 
+    fontSize: 18, 
+    fontWeight: "bold", 
+  },
+  rowContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  timeText: {
+    fontSize: 25,
+    fontWeight: "bold",
+    color: "#000",
+  },
+  details: { 
+    fontSize: 14, 
+    color: "#000", 
+    marginTop: 5 
+  },
   status: { fontSize: 14, fontWeight: "bold", marginTop: 10, color: "#28A745" },
   editButton: {
     paddingVertical: 8,

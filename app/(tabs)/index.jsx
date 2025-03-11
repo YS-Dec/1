@@ -17,7 +17,6 @@ import bground from "@/assets/images/light-purple-glitter-background-nkx73.png"
 import DateTimePicker from "@react-native-community/datetimepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-
 import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
 import { useRouter } from "expo-router";
 import { collection, addDoc } from "firebase/firestore";
@@ -191,180 +190,178 @@ const RequestCleaning = () => {
         />
       )}
       <ImageBackground source={bground} style={styles.background}>
-      <ScrollView contentContainerStyle={styles.overlay} keyboardShouldPersistTaps="handled">
-      {/*<ImageBackground source={bground} style={styles.background}>*/}
-        <View style={styles.logoContainer}>
-          <Animated.Image entering={FadeInRight.delay(300).duration(2000)} source={logo} style={styles.logo} />
-        </View>
-        
-        <View style={styles.formWrapper}>
-          <Text style={styles.title}>Request a Cleaning Service</Text>
-
-          {/* Location */}
-          <View style={styles.section}>
-            <Feather name="map-pin" size={22} color="#555" />
-            <View style={styles.locationRow}>
-              <GooglePlacesAutocomplete
-                ref={locationRef}
-                placeholder="Enter location"
-                fetchDetails={true}
-                enablePoweredByContainer={false}
-                onPress={(data) => setLocation(data.description)}
-                query={{
-                  key: GOOGLE_KEY.GOOGLE_MAPS_API_KEY,
-                  language: "en",
-                }}
-                styles={{
-                  container: styles.autocompleteContainer,
-                  textInput: styles.input,
-                  listView: {
-                    position: "absolute",
-                    top: 55,
-                    zIndex: 1001,
-                    backgroundColor: "#fff",
-                    elevation: 5,
-                  },
-                }}
-              />
-              <TouchableOpacity style={styles.locationButton} onPress={getCurrentLocation}>
-                <Text style={styles.pinEmoji}>📍</Text>
-              </TouchableOpacity>
-            </View>
+        <ScrollView contentContainerStyle={styles.overlay} keyboardShouldPersistTaps="handled">
+          <View style={styles.logoContainer}>
+            <Animated.Image entering={FadeInRight.delay(300).duration(2000)} source={logo} style={styles.logo} />
           </View>
+          
+          <View style={styles.formWrapper}>
+            <Text style={styles.title}>Request a Cleaning Service</Text>
 
-          <View>
-      {/* Date Picker */}
-      <View style={styles.section}>
-        <Feather name="calendar" size={22} color="#555" />
-        {Platform.OS === "web" ? (
-          <View style={styles.datePickerWrapper}>
-            <DatePicker
-              selected={date}
-              onChange={(newDate) => setDate(newDate)}
-              minDate={new Date()}
-              dateFormat="MM/dd/yyyy"
-              popperPlacement="top-start"
-              popperClassName="datePickerPopper"
-              popperProps={{ strategy: "fixed" }}
-              portalId="root-portal"
-              customInput={
-                <TextInput
-                  style={[styles.input, { width: "100%" }]}
-                  value={date.toLocaleDateString("en-US", {
+            {/* Location */}
+            <View style={styles.section}>
+              <Feather name="map-pin" size={22} color="#555" />
+              <View style={styles.locationRow}>
+                <GooglePlacesAutocomplete
+                  ref={locationRef}
+                  placeholder="Enter location"
+                  fetchDetails={true}
+                  enablePoweredByContainer={false}
+                  onPress={(data) => setLocation(data.description)}
+                  query={{
+                    key: GOOGLE_KEY.GOOGLE_MAPS_API_KEY,
+                    language: "en",
+                  }}
+                  styles={{
+                    container: styles.autocompleteContainer,
+                    textInput: styles.input,
+                    listView: {
+                      position: "absolute",
+                      top: 55,
+                      zIndex: 1001,
+                      backgroundColor: "#fff",
+                      elevation: 5,
+                    },
+                  }}
+                />
+                <TouchableOpacity style={styles.locationButton} onPress={getCurrentLocation}>
+                  <Text style={styles.pinEmoji}>📍</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View>
+        {/* Date Picker */}
+        <View style={styles.section}>
+          <Feather name="calendar" size={22} color="#555" />
+          {Platform.OS === "web" ? (
+            <View style={styles.datePickerWrapper}>
+              <DatePicker
+                selected={date}
+                onChange={(newDate) => setDate(newDate)}
+                minDate={new Date()}
+                dateFormat="MM/dd/yyyy"
+                popperPlacement="top-start"
+                popperClassName="datePickerPopper"
+                popperProps={{ strategy: "fixed" }}
+                portalId="root-portal"
+                customInput={
+                  <TextInput
+                    style={[styles.input, { width: "100%" }]}
+                    value={date.toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                    })}
+                    onChange={() => {}}
+                  />
+                }
+              />
+            </View>
+          ) : (
+            <>
+              <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.input}>
+                <Text>
+                  {date.toLocaleDateString("en-US", {
                     year: "numeric",
                     month: "2-digit",
                     day: "2-digit",
                   })}
-                  onChange={() => {}}
+                </Text>
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={date}
+                  mode="date"
+                  display="default"
+                  onChange={(event, selectedDate) => {
+                    setShowDatePicker(false);
+                    if (selectedDate) setDate(selectedDate);
+                  }}
                 />
-              }
-            />
-          </View>
-        ) : (
-          <>
-            <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.input}>
-              <Text>
-                {date.toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "2-digit",
-                  day: "2-digit",
-                })}
-              </Text>
-            </TouchableOpacity>
-            {showDatePicker && (
-              <DateTimePicker
-                value={date}
-                mode="date"
-                display="default"
-                onChange={(event, selectedDate) => {
-                  setShowDatePicker(false);
-                  if (selectedDate) setDate(selectedDate);
-                }}
-              />
-            )}
-          </>
-        )}
-      </View>
+              )}
+            </>
+          )}
+        </View>
 
-      {/* Time Picker */}
-      <View style={styles.section}>
-        <Feather name="clock" size={22} color="#555" />
-        {Platform.OS === "web" ? (
-          <View style={styles.datePickerWrapper}>
-            <DatePicker
-              selected={time}
-              onChange={(newTime) => setTime(newTime)}
-              showTimeSelect
-              showTimeSelectOnly
-              timeIntervals={15}
-              timeCaption="Time"
-              dateFormat="hh:mm aa"
-              popperPlacement="top-start"
-              popperClassName="datePickerPopper"
-              popperProps={{ strategy: "fixed" }}
-              portalId="root-portal"
-              customInput={
-                <TextInput
-                  style={[styles.input, { width: "100%" }]}
-                  value={time.toLocaleTimeString([], {
+        {/* Time Picker */}
+        <View style={styles.section}>
+          <Feather name="clock" size={22} color="#555" />
+          {Platform.OS === "web" ? (
+            <View style={styles.datePickerWrapper}>
+              <DatePicker
+                selected={time}
+                onChange={(newTime) => setTime(newTime)}
+                showTimeSelect
+                showTimeSelectOnly
+                timeIntervals={15}
+                timeCaption="Time"
+                dateFormat="hh:mm aa"
+                popperPlacement="top-start"
+                popperClassName="datePickerPopper"
+                popperProps={{ strategy: "fixed" }}
+                portalId="root-portal"
+                customInput={
+                  <TextInput
+                    style={[styles.input, { width: "100%" }]}
+                    value={time.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: true,
+                    })}
+                    onChange={() => {}}
+                  />
+                }
+              />
+            </View>
+          ) : (
+            <>
+              <TouchableOpacity onPress={() => setShowTimePicker(true)} style={styles.input}>
+                <Text>
+                  {time.toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
                     hour12: true,
                   })}
-                  onChange={() => {}}
+                </Text>
+              </TouchableOpacity>
+              {showTimePicker && (
+                <DateTimePicker
+                  value={time}
+                  mode="time"
+                  display="default"
+                  onChange={(event, selectedTime) => {
+                    setShowTimePicker(false);
+                    if (selectedTime) setTime(selectedTime);
+                  }}
                 />
-              }
-            />
-          </View>
-        ) : (
-          <>
-            <TouchableOpacity onPress={() => setShowTimePicker(true)} style={styles.input}>
-              <Text>
-                {time.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: true,
-                })}
+              )}
+            </>
+          )}
+        </View>
+      </View>
+      
+
+            {/* Additional Notes */}
+            <View style={styles.section}>
+              <Feather name="file-text" size={22} color="#555" />
+              <TextInput
+                style={[styles.input, { height: 100 }]}
+                placeholder="Additional notes (optional)"
+                value={additionalNotes}
+                onChangeText={setAdditionalNotes}
+                multiline
+              />
+            </View>
+
+            {/* Submit Button */}
+            <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+              <Text style={styles.buttonText}>
+                <Feather name="send" size={16} color="#fff" /> Submit Request
               </Text>
             </TouchableOpacity>
-            {showTimePicker && (
-              <DateTimePicker
-                value={time}
-                mode="time"
-                display="default"
-                onChange={(event, selectedTime) => {
-                  setShowTimePicker(false);
-                  if (selectedTime) setTime(selectedTime);
-                }}
-              />
-            )}
-          </>
-        )}
-      </View>
-    </View>
-    
-
-          {/* Additional Notes */}
-          <View style={styles.section}>
-            <Feather name="file-text" size={22} color="#555" />
-            <TextInput
-              style={[styles.input, { height: 100 }]}
-              placeholder="Additional notes (optional)"
-              value={additionalNotes}
-              onChangeText={setAdditionalNotes}
-              multiline
-            />
           </View>
-
-          {/* Submit Button */}
-          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-            <Text style={styles.buttonText}>
-              <Feather name="send" size={16} color="#fff" /> Submit Request
-            </Text>
-          </TouchableOpacity>
-        </View>
-        {/*</ImageBackground>*/}
-      </ScrollView>
+        </ScrollView>
       </ImageBackground>
       {/* --- SUCCESS POPUP (Overlay) --- */}
       {showSuccessPopup && (

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import logo from "@/assets/images/logo.png";
+import broom from "@/assets/lottie/broom.json";
+import LottieView from 'lottie-react-native';
 import * as Haptics from "expo-haptics";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
 import Animated,{FadeIn, FadeInLeft, FadeInRight, FadeOut } from 'react-native-reanimated';
@@ -22,7 +24,7 @@ const LoginPage = () => {
   // Manage email and password states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
+  const [loading, setLoading] = useState(false);
   // 🔥 **Login Handler with Email Verification Check**
   const handleLogin = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -31,7 +33,9 @@ const LoginPage = () => {
       Alert.alert("Error", "Please enter both email and password.");
       return;
     }
-  
+    
+    setLoading(true);
+
     try {
       console.log("🚀 Attempting login...");
   
@@ -54,16 +58,21 @@ const LoginPage = () => {
         return;
       }
 
-      console.log("✅ Email verified, proceeding with login...");
-      Alert.alert("Success", "Login successful!");
-      router.replace("(tabs)");
-  
       console.log("✅ User logged in successfully!");
       await AsyncStorage.setItem("email", email);
       await AsyncStorage.setItem("authToken", user.accessToken);
+
+      //delay for animation before navigating
+      setTimeout(() => {
+        setLoading(false);
+        router.replace("(tabs)");
+      }, 2000);
+
     } catch (error) {
       console.error("❌ Login failed:", error);
       Alert.alert("Login Error", error.message);
+
+      setLoading(false);
     }
   };
 
@@ -123,69 +132,87 @@ const LoginPage = () => {
   const goToSignUp = () => {
     router.push('/signup');
   };
-
+  
   return (
     <View style={styles.container}>
-      <Animated.View style={styles.stars}>
-        {Array.from({ length: 50 }).map((_, index) => (
-          <Animated.View 
-            key={index} 
-            style={{
-              position: 'absolute',
-              top: Math.random() * 800,
-              left: Math.random() * 400,
-              width: 2,
-              height: 2,
-              backgroundColor: 'white',
-              borderRadius: 50,
-              opacity: Math.random() * 0.8,
-            }}
+      {/*loading screen on successful login*/}
+      {loading ? (
+        <LottieView
+          source={broom}
+          autoPlay
+          loop
+          style={styles.fullScreenLottie}
+        />
+      ) : (
+        <>
+        <Animated.View style={styles.stars}>
+          {Array.from({ length: 50 }).map((_, index) => (
+            <Animated.View 
+              key={index} 
+              style={{
+                position: 'absolute',
+                top: Math.random() * 800,
+                left: Math.random() * 400,
+                width: 2,
+                height: 2,
+                backgroundColor: 'white',
+                borderRadius: 50,
+                opacity: Math.random() * 0.8,
+              }}
+            />
+          ))}
+        </Animated.View>
+          <View style={styles.logoContainer}>
+            <Animated.Image entering={FadeInRight.delay(300).duration(2000)} source={logo} style={styles.logo} />
+          </View>
+  
+          <Text style={styles.title}>Login</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor="gray"  
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
           />
-        ))}
-      </Animated.View>
-      <View style={styles.logoContainer}>
-        {/*<Image source={logo} style={styles.logo} />*/}
-        <Animated.Image entering={FadeInRight.delay(300).duration(2000)} source={logo} style={styles.logo} />
-      </View>
-      <Text style={styles.title}>Login</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="gray"  
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="gray"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Login</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.signupButton} onPress={goToSignUp}>
-        <Text style={styles.signupText}>Don't have an account? Sign Up</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.forgotPasswordButton} onPress={handleForgotPassword}>
-        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.resendVerificationButton} onPress={handleResendVerification}>
-        <Text style={styles.resendVerificationText}>Resend Verification Email</Text>
-      </TouchableOpacity>
-      
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor="gray"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+  
+          <TouchableOpacity style={styles.button} onPress={handleLogin}>
+            <Text style={styles.buttonText}>Login</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.signupButton} onPress={goToSignUp}>
+            <Text style={styles.signupText}>Don't have an account? Sign Up</Text>
+          </TouchableOpacity>
+  
+          <TouchableOpacity style={styles.forgotPasswordButton} onPress={handleForgotPassword}>
+            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+          </TouchableOpacity>
+  
+          <TouchableOpacity style={styles.resendVerificationButton} onPress={handleResendVerification}>
+            <Text style={styles.resendVerificationText}>Resend Verification Email</Text>
+          </TouchableOpacity>
+        </>
+      )}
     </View>
   );
 };
 
 // 🔥 **Styles**
 const styles = StyleSheet.create({
+  fullScreenLottie:{
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    backgroundColor: "5D3FD3",
+  },
   container: { 
     flex: 1, 
     alignItems: 'center', 
