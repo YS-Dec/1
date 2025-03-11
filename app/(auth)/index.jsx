@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import logo from "@/assets/images/logo.png";
+import * as Haptics from "expo-haptics";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import Animated,{FadeIn, FadeInLeft, FadeInRight, FadeOut } from 'react-native-reanimated';
 import { 
   signInWithEmailAndPassword, 
   sendPasswordResetEmail, 
@@ -23,6 +25,8 @@ const LoginPage = () => {
 
   // 🔥 **Login Handler with Email Verification Check**
   const handleLogin = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
     if (!email || !password) {
       Alert.alert("Error", "Please enter both email and password.");
       return;
@@ -186,8 +190,26 @@ const LoginPage = () => {
   return (
 
     <View style={styles.container}>
+      <Animated.View style={styles.stars}>
+        {Array.from({ length: 50 }).map((_, index) => (
+          <Animated.View 
+            key={index} 
+            style={{
+              position: 'absolute',
+              top: Math.random() * 800,
+              left: Math.random() * 400,
+              width: 2,
+              height: 2,
+              backgroundColor: 'white',
+              borderRadius: 50,
+              opacity: Math.random() * 0.8,
+            }}
+          />
+        ))}
+      </Animated.View>
       <View style={styles.logoContainer}>
-        <Image source={logo} style={styles.logo} />
+        {/*<Image source={logo} style={styles.logo} />*/}
+        <Animated.Image entering={FadeInRight.delay(300).duration(2000)} source={logo} style={styles.logo} />
       </View>
       <Text style={styles.title}>Login</Text>
       <TextInput
@@ -224,7 +246,7 @@ const LoginPage = () => {
       <TouchableOpacity style={styles.resendVerificationButton} onPress={handleResendVerification}>
         <Text style={styles.resendVerificationText}>Resend Verification Email</Text>
       </TouchableOpacity>
-
+      
     </View>
   );
 };
@@ -232,36 +254,48 @@ const LoginPage = () => {
 // 🔥 **Styles**
 const styles = StyleSheet.create({
   container: { 
-    justifyContent: 'flex-start', 
-    flex:1, 
+    flex: 1, 
     alignItems: 'center', 
+    justifyContent: 'center', 
     padding: 20, 
-    backgroundColor: '#FFFFFF'
+    backgroundColor: '#5D3FD3', // Rich dark purple background
+    position: 'relative'
   },
   title: { 
-    fontSize: 24, 
+    fontSize: 28, 
     fontWeight: 'bold', 
+    color: '#FFFFFF', // Brighter white text
     marginBottom: 20 
   },
   input: { 
-    width: '80%', 
-    padding: 10, 
+    width: '90%', 
+    padding: 12, 
     marginVertical: 10, 
     borderWidth: 1, 
-    borderRadius: 5 
+    borderRadius: 8,
+    borderColor: '#B0A3F5', // Light purple border
+    backgroundColor: '#372B7B', // Lighter purple input background
+    color: '#FFFFFF', // White text inside input
+    fontSize: 16
   },
   button: { 
-    backgroundColor: '#007BFF', 
+    backgroundColor: '#6A5ACD', // Soft purple-blue button
     padding: 15, 
-    borderRadius: 5, 
-    marginTop: 10 
+    borderRadius: 8, 
+    marginTop: 15,
+    width: '90%',
+    alignItems: 'center',
+    shadowColor: '#E94560',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
   },
   buttonText: { 
     color: '#fff', 
-    fontWeight: 'bold' 
+    fontWeight: 'bold', 
+    fontSize: 18 
   },
   logoContainer: { 
-    justifyContent: 'flex-start', 
     alignItems: 'center', 
     padding: 10 
   },
@@ -275,15 +309,17 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   signupText: {
-    color: '#007BFF',
+    color: '#B0A3F5',  // Lighter purple for readability
     fontSize: 16,
+    fontWeight: "600",
     textDecorationLine: 'underline',
   },
   forgotPasswordButton: {
     marginTop: 10,
   },
   forgotPasswordText: {
-    color: '#007BFF',
+    color: '#B0A3F5',
+    fontWeight: '600',
     fontSize: 16,
     textDecorationLine: 'underline',
   },
@@ -291,10 +327,19 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   resendVerificationText: {
-    color: '#FF5733',
+    color: '#F8C8DC', // Light pink for contrast
     fontSize: 16,
+    fontWeight: "600",
     textDecorationLine: 'underline',
   },
+  // Starry Background Effect
+  stars: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    top: 0,
+    left: 0,
+  }
 });
 
 export default LoginPage;

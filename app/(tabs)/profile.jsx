@@ -5,6 +5,7 @@ import {
   Alert,
   Text,
   StyleSheet,
+  ImageBackground,
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
@@ -16,6 +17,9 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, onSnapshot, updateDoc, setDoc, getDoc } from "firebase/firestore";  
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { db, auth, storage } from "../firebaseConfig"; 
+
+
+
 
 const Profile = () => {
   const router = useRouter();
@@ -219,6 +223,7 @@ const Profile = () => {
   }
 
   return (
+    
     <View style={styles.container}>
       <Text style={styles.header}>Profile Info</Text>
 
@@ -254,13 +259,17 @@ const Profile = () => {
       <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
         <Text style={styles.signOutButtonText}>Sign Out</Text>
       </TouchableOpacity>
+
+      
     </View>
+         
+    
   );
 };
 
 // **Styles**
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#f9f9f9', alignItems: 'center' },
+  container: { flex: 1, padding: 20, backgroundColor: "rgba(255, 255, 255, 0.3)", alignItems: 'center' },
   header: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
   infoLabel: { fontSize: 18, fontWeight: 'bold', color: '#555' },
   infoValue: { fontSize: 18, color: '#333', marginBottom: 10 },
@@ -273,6 +282,12 @@ const styles = StyleSheet.create({
   signOutButton: { marginTop: 20, backgroundColor: '#FF3B30', paddingVertical: 12, paddingHorizontal: 25, borderRadius: 8 },
   signOutButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   errorText: { color: 'red', fontSize: 16, marginBottom: 20 },
+  background: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    resizeMode: "cover",
+  },
 });
 
 export default Profile;
