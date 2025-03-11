@@ -18,40 +18,37 @@ const Plan = () => {
   const router = useRouter();
   const auth = getAuth();
   const [user, setUser] = useState(null);
-  const [requests, setRequests] = useState([]);
+  const [requests, setRequests] = useState({ myRequests: [], acceptedTasks: [] });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   // 🔥 Fetch requests from Firestore
-  const fetchRequests = async (userId, isRefreshing = false) => {
-    if (!userId) return;
-
+  const fetchRequests = async () => {
     try {
-      if (!isRefreshing) setLoading(true); // ✅ Fix: Use refreshing state correctly
-
-      console.log("📤 Fetching requests for user:", userId);
-      const q = query(collection(db, "cleaningRequests"), where("userId", "==", userId));
-      const querySnapshot = await getDocs(q);
-
-      if (querySnapshot.empty) {
-        console.log("❌ No requests found for user:", userId);
-      } else {
-        console.log("✅ Requests found:", querySnapshot.docs.length);
+      const user = auth.currentUser;
+      if (!user) {
+        setLoading(false); // Stop loading if no user
+        return;
       }
-
-      const userRequests = querySnapshot.docs.map(doc => ({
+  
+      const querySnapshot = await getDocs(collection(db, "cleaningRequests"));
+      const fetchedRequests = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-
-      setRequests(userRequests);
+  
+      // ✅ Separate into two categories
+      const myRequests = fetchedRequests.filter((req) => req.userId === user.uid);
+      const acceptedTasks = fetchedRequests.filter((req) => req.assignedTo === user.uid);
+  
+      setRequests({ myRequests, acceptedTasks }); // Store both categories
     } catch (error) {
-      console.error("❌ Error fetching requests:", error);
+      console.error("Error fetching plan requests:", error);
     } finally {
-      setLoading(false);
-      setRefreshing(false); // ✅ Stop refresh indicator
+      setLoading(false); // ✅ Ensure loading stops no matter what
     }
-  };
+};
+  
 
   // ✅ Listen for user authentication changes
   useEffect(() => {
@@ -104,6 +101,22 @@ const Plan = () => {
     }
   };
 
+  const cancelAcceptedTask = async (requestId) => {
+    try {
+      const requestRef = doc(db, "cleaningRequests", requestId);
+      await updateDoc(requestRef, {
+        assignedTo: null,
+        status: "pending",
+      });
+
+      Alert.alert("Task Canceled", "The task is now available again.");
+      fetchRequests(); // Refresh data
+    } catch (error) {
+      console.error("❌ Error canceling task:", error);
+      Alert.alert("Error", "Failed to cancel task.");
+    }
+  };
+
   // **Render Each Request Item**
   const renderRequest = ({ item }) => (
     <View style={styles.requestCard}>
@@ -113,13 +126,25 @@ const Plan = () => {
       <Text style={styles.details}>📝 Notes: {item.additionalNotes || "N/A"}</Text>
       <Text style={styles.status}>Status: {item.status}</Text>
 
-      <TouchableOpacity style={styles.editButton} onPress={() => editRequest(item.id, { status: "Confirmed" })}>
-        <Text style={styles.buttonText}>Confirm</Text>
-      </TouchableOpacity>
+      {item.userId === user?.uid && (
+        <>
+          <TouchableOpacity style={styles.editButton} onPress={() => editRequest(item.id, { status: "Confirmed" })}>
+            <Text style={styles.buttonText}>Confirm</Text>
+          </TouchableOpacity>
 
-      <TouchableOpacity style={styles.deleteButton} onPress={() => deleteRequest(item.id)}>
-        <Text style={styles.buttonText}>Delete</Text>
-      </TouchableOpacity>
+          <TouchableOpacity style={styles.deleteButton} onPress={() => deleteRequest(item.id)}>
+            <Text style={styles.buttonText}>Delete</Text>
+          </TouchableOpacity>
+        </>
+      )}
+
+      {/* cancel task */}
+      {item.assignedTo === user?.uid && (
+        <TouchableOpacity style={styles.cancelButton} onPress={() => cancelAcceptedTask(item.id)}>
+          <Text style={styles.buttonText}>Cancel Task</Text>
+        </TouchableOpacity>
+      )}
+
     </View>
   );
 
@@ -135,16 +160,30 @@ const Plan = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Your Cleaning Requests</Text>
-      {requests.length === 0 ? (
-        <Text style={styles.noRequests}>No requests found.</Text>
+
+      {/* 🔹 My Cleaning Requests Section */}
+      <Text style={styles.sectionTitle}>My Requests</Text>
+      {requests.myRequests.length === 0 ? (
+        <Text style={styles.noRequests}>No requests created.</Text>
       ) : (
         <FlatList
-          data={requests}
+          data={requests.myRequests}
           keyExtractor={(item) => item.id}
-          refreshControl={  // ✅ Pull-to-refresh control
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          renderItem={renderRequest}  // ✅ Fix duplicate renderItem function
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          renderItem={renderRequest} // ✅ Use the same render function
+        />
+      )}
+
+      {/* 🔹 Accepted Cleaning Tasks Section */}
+      <Text style={styles.sectionTitle}>Accepted Tasks</Text>
+      {requests.acceptedTasks.length === 0 ? (
+        <Text style={styles.noRequests}>No accepted tasks.</Text>
+      ) : (
+        <FlatList
+          data={requests.acceptedTasks}
+          keyExtractor={(item) => item.id}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          renderItem={renderRequest} // ✅ Use the same render function
         />
       )}
     </View>
@@ -181,6 +220,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 5,
   },
+  cancelButton: { backgroundColor: "#FFA500", padding: 8, borderRadius: 5, marginTop: 5, alignItems: "center" },
   buttonText: { color: "#fff", fontSize: 16 },
 });
 

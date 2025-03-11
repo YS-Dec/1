@@ -19,7 +19,8 @@ const AvailableRequestsScreen = () => {
           id: doc.id,
           ...doc.data(),
         }))
-        .filter((request) => request.status === "pending"); // Only show unassigned requests
+        .filter((request) => request.status === "pending"); // ✅ Keep only unassigned requests
+  
       setRequests(fetchedRequests);
     } catch (error) {
       console.error("Error fetching requests:", error);
@@ -29,35 +30,23 @@ const AvailableRequestsScreen = () => {
   // Function to accept a cleaning task
   const handleAcceptRequest = async (requestId) => {
     const user = auth.currentUser;
-  
+    
     if (!user) {
       alert("You must be logged in to accept a request.");
       return;
     }
   
     try {
-      // Fetch request details
       const requestRef = doc(db, "cleaningRequests", requestId);
-      const requestSnap = await getDoc(requestRef);
-  
-      if (!requestSnap.exists()) {
-        alert("Request does not exist.");
-        return;
-      }
-  
-      const requestData = requestSnap.data();
-  
-      // Prevent user from accepting their own request
-      if (user.uid === requestData.userId) {
-        alert("You cannot accept your own request.");
-        return;
-      }
-  
-      // Update the request status and assign the cleaner
+      
+      // Update Firestore
       await updateDoc(requestRef, {
         status: "accepted",
-        cleanerId: user.uid,
+        assignedTo: user.uid, // Store cleaner ID
       });
+  
+      // ✅ Remove the request from the state (so it disappears immediately)
+      setRequests((prevRequests) => prevRequests.filter(request => request.id !== requestId));
   
       alert("Request successfully assigned to you!");
     } catch (error) {
