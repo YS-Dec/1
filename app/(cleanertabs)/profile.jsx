@@ -243,13 +243,13 @@ const Profile = () => {
       {applicationStatus === "pending" ? (
         <Text style={styles.pendingText}>Your cleaner application is under review.</Text>
       ) : applicationStatus === "complete" ? (
-        <Text style={styles.pendingText}>✅ You are currently registered as a Cleaner.{"\n"}
-         Sign in again with cleaner Login!</Text>
+        <Text style={styles.pendingText}>✅ You are logged in as a Cleaner.</Text>
       ) : (
         <TouchableOpacity style={styles.cleanerButton} onPress={applyToBeCleaner}>
           <Text style={styles.cleanerButtonText}>Apply to be a Cleaner</Text>
         </TouchableOpacity>
       )}
+
 
       <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
         <Text style={styles.signOutButtonText}>Sign Out</Text>
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   profilePicture: { width: 150, height: 150, borderRadius: 75, backgroundColor: '#ddd', marginBottom: 20 },
   placeholder: { justifyContent: 'center', alignItems: 'center' },
   placeholderText: { fontSize: 16, color: '#555' },
-  pendingText: { fontSize: 16, color: '#FFA500', marginTop: 10, textAlign: "center", fontWeight: "bold" },
+  pendingText: { fontSize: 16, color: '#FFA500', marginTop: 10, fontWeight: "bold" },
   cleanerButton: { backgroundColor: '#28A745', paddingVertical: 12, paddingHorizontal: 25, borderRadius: 8, marginTop: 20 },
   cleanerButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   signOutButton: { marginTop: 20, backgroundColor: '#FF3B30', paddingVertical: 12, paddingHorizontal: 25, borderRadius: 8 },

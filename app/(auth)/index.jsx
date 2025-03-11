@@ -51,8 +51,10 @@ const LoginPage = () => {
       }
 
       console.log("✅ Email verified, proceeding with login...");
-      Alert.alert("Success", "Login successful!");
+      
       router.replace("(tabs)");
+      
+      Alert.alert("Success", "Login successful!");
   
       console.log("✅ User logged in successfully!");
       await AsyncStorage.setItem("email", email);
@@ -62,6 +64,67 @@ const LoginPage = () => {
       Alert.alert("Login Error", error.message);
     }
   };
+
+  const handleCleanerLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please enter both email and password.");
+      return;
+    }
+  
+    try {
+      console.log("🚀 Attempting Cleaner login...");
+  
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      if (!user) {
+        throw new Error("Authentication failed. No user returned.");
+      }
+  
+      console.log("✅ Firebase Auth Cleaner:", user.email);
+  
+      // 🔥 Refresh user data to check email verification
+      await user.reload();
+      const refreshedUser = auth.currentUser;
+  
+      if (!refreshedUser.emailVerified) {
+        console.log("❌ Email is not verified!");
+        Alert.alert("Email Not Verified", "Please check your email and verify your account before logging in.");
+        await signOut(auth);
+        return;
+      }
+  
+      // ✅ **Fetch User Role from Firestore**
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (!userDoc.exists()) {
+        throw new Error("User data not found in database.");
+      }
+  
+      const userData = userDoc.data();
+      const userRole = userData.role; // "cleaner" or "user"
+  
+      console.log("✅ User Role:", userRole);
+  
+      // ✅ **Redirect Based on Role**
+      if (userRole === "cleaner") {
+        console.log("Replacing to cleaner tab")
+        router.push("(cleanertabs)/requests");
+      } else {
+        Alert.alert("Error", "This account is not registered as a cleaner.");
+        await signOut(auth);
+        return;
+      }
+  
+      console.log("✅ Cleaner logged in successfully!");
+      await AsyncStorage.setItem("email", email);
+      await AsyncStorage.setItem("authToken", user.accessToken);
+      await AsyncStorage.setItem("userRole", userRole);
+    } catch (error) {
+      console.error("❌ Cleaner Login failed:", error);
+      Alert.alert("Login Error", error.message);
+    }
+  };
+
+
 
   // 🔥 **Handle Forgot Password**
   const handleForgotPassword = async () => {
@@ -121,6 +184,7 @@ const LoginPage = () => {
   };
 
   return (
+
     <View style={styles.container}>
       <View style={styles.logoContainer}>
         <Image source={logo} style={styles.logo} />
@@ -145,6 +209,9 @@ const LoginPage = () => {
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
+      <TouchableOpacity style={styles.button} onPress={handleCleanerLogin}>
+        <Text style={styles.buttonText}>Login as Cleaner</Text>
+      </TouchableOpacity>
 
       <TouchableOpacity style={styles.signupButton} onPress={goToSignUp}>
         <Text style={styles.signupText}>Don't have an account? Sign Up</Text>
@@ -157,6 +224,7 @@ const LoginPage = () => {
       <TouchableOpacity style={styles.resendVerificationButton} onPress={handleResendVerification}>
         <Text style={styles.resendVerificationText}>Resend Verification Email</Text>
       </TouchableOpacity>
+
     </View>
   );
 };

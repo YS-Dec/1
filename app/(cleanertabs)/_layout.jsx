@@ -21,28 +21,19 @@ export default function TabLayout() {
         }),
       }}
     >
-      
+
       {/* requesting tab */}
       <Tabs.Screen
-        name="index"
+        name="requests"
         options={{
-          title: 'Request',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="paper-plane-outline" size={size} color={color} />
-          ),
-        }}
-      />
-
-      {/* available requests tab */}
-      <Tabs.Screen
-        name="plan"
-        options={{
-          title: "Plan",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="list-outline" size={size} color={color} />
-          ),
-        }}
-      />
+            title: 'Request',
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="paper-plane-outline" size={size} color={color} />
+            ),
+          }}
+        />
+      
+ 
 
       {/* Profile Tab (Tab bar hidden) */}
       <Tabs.Screen

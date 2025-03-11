@@ -17,13 +17,10 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
-<<<<<<< HEAD
 PlanDocs
 *.pdf
 *.docx
 
-=======
->>>>>>> parent of f87c426 (Revert "Merge branch 'index-page-updated'")
 # Metro
 .metro-health-check*
 
