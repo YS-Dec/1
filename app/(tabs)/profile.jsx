@@ -164,26 +164,26 @@ const Profile = () => {
         return;
       }
 
-      // 🔥 Reference to the cleaner application in Firestore
       const applicationRef = doc(db, "cleanerApplications", user.uid);
       const docSnapshot = await getDoc(applicationRef);
 
       if (docSnapshot.exists()) {
-        Alert.alert("Application Pending", "Your application is already being reviewed.");
+        Alert.alert("Application Pending", "Your application is under reviewed.");
         return;
       }
 
-      // 🔥 Create a new application in Firestore
+      // 🔥 Submit new application
       await setDoc(applicationRef, {
         userId: user.uid,
         email: user.email,
-        fullName: userInfo?.fullName || "N/A",
-        profilePictureUrl: userInfo?.profilePictureUrl || "",
+        fullName: user.displayName || "N/A",
+        profilePictureUrl: user.photoURL || "",
         status: "pending",
         appliedAt: new Date(),
       });
 
       setApplicationStatus("pending");
+
       Alert.alert("Success", "Your application has been submitted for review.");
     } catch (error) {
       console.error("Error applying to be a cleaner:", error);
@@ -248,11 +248,10 @@ const Profile = () => {
       {applicationStatus === "pending" ? (
         <Text style={styles.pendingText}>Your cleaner application is under review.</Text>
       ) : applicationStatus === "complete" ? (
-        <Text style={styles.pendingText}>✅ You are currently registered as a Cleaner.{"\n"}
-         Sign in again with cleaner Login!</Text>
+        <Text style={styles.pendingText}>✅ You can sign in as Cleaner Now!</Text>
       ) : (
         <TouchableOpacity style={styles.cleanerButton} onPress={applyToBeCleaner}>
-          <Text style={styles.cleanerButtonText}>Apply to be a Cleaner</Text>
+            <Text style={styles.cleanerButtonText}>Apply to be a Cleaner</Text>
         </TouchableOpacity>
       )}
 
@@ -260,7 +259,6 @@ const Profile = () => {
         <Text style={styles.signOutButtonText}>Sign Out</Text>
       </TouchableOpacity>
 
-      
     </View>
          
     
@@ -268,7 +266,8 @@ const Profile = () => {
 };
 
 // **Styles**
-const styles = StyleSheet.create({
+  const styles = StyleSheet.create({
+  
   container: { flex: 1, padding: 20, backgroundColor: "rgba(255, 255, 255, 0.3)", alignItems: 'center' },
   header: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
   infoLabel: { fontSize: 18, fontWeight: 'bold', color: '#555' },

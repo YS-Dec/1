@@ -11,15 +11,15 @@ export default function TabLayout() {
 
   return (
     <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarStyle: Platform.select({
-          ios: { position: 'absolute' },
-          android: { elevation: 0 },
-          default: {},
-        }),
-      }}
+        screenOptions={{
+          tabBarActiveTintColor: "#00308F",
+          headerShown: false,
+          tabBarStyle: Platform.select({
+            ios: { position: 'absolute' },
+            android: { elevation: 0 },
+            default: {},
+          }),
+        }}
     >
 
       {/* requesting tab */}
@@ -31,7 +31,17 @@ export default function TabLayout() {
               <Ionicons name="paper-plane-outline" size={size} color={color} />
             ),
           }}
-        />
+      />
+      
+      {/* Cleaner Accepted Orders */}
+      <Tabs.Screen
+        name="order"
+        options={{
+          title: "Accepted Orders",
+          tabBarIcon: ({ color, size }) => 
+            <Ionicons name="checkmark-done-outline" size={size} color={color} />,
+        }}
+      />
       
  
 

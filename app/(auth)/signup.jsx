@@ -56,6 +56,8 @@ const SignUpScreen = () => {
         profilePictureUrl: "",
         role: "user",
         status: "unverified",  // 🔥 Default status
+        totalPoints: 0,
+        totalRatings: 0,
         createdAt: new Date(),
       });
 

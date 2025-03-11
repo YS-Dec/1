@@ -162,6 +162,7 @@ const RequestCleaning = () => {
 
       // 7) Show success popup
       setShowSuccessPopup(true);
+
     } catch (error) {
       console.error("Failed to submit request:", error);
       showError("Failed to submit request. Please try again.");
@@ -405,6 +406,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
+    paddingBottom:100,
   },
   background: {
     flex: 1,

@@ -178,7 +178,7 @@ const LoginPage = () => {
       }  
     } catch (error) {
       console.error("❌ Resend Verification Error:", error);
-      Alert.alert("Error", error.message);
+      Alert.alert("Error, Please try again later", error.message);
     }
   };
 

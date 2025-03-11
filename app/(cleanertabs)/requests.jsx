@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet,ImageBackground } from "react-native";
 import { collection, getDocs, updateDoc, doc, getDoc } from "firebase/firestore";
 import { db, auth } from "../firebaseConfig"; // Ensure this path is correct
+import bground from "@/assets/images/light-purple-glitter-background-nkx73.png"
+
 
 const AvailableRequestsScreen = () => {
   const [requests, setRequests] = useState([]);
@@ -29,6 +31,8 @@ const AvailableRequestsScreen = () => {
   // Function to accept a cleaning task
   const handleAcceptRequest = async (requestId) => {
     const user = auth.currentUser;
+    const cleanerEmail = user.email; // ✅ Get email from Firebase Auth
+
   
     if (!user) {
       alert("You must be logged in to accept a request.");
@@ -52,12 +56,23 @@ const AvailableRequestsScreen = () => {
         alert("You cannot accept your own request.");
         return;
       }
+
+      // Prevent accepting an already accepted request
+      if (requestData.status !== "pending") {
+        alert("This request has already been accepted.");
+        return;
+      }
   
       // Update the request status and assign the cleaner
       await updateDoc(requestRef, {
         status: "accepted",
         cleanerId: user.uid,
+        cleanerEmail: cleanerEmail, // ✅ Store cleaner's email
       });
+
+      // ✅ Remove the accepted request from the UI
+      setRequests((prevRequests) => prevRequests.filter((req) => req.id !== requestId));
+
   
       alert("Request successfully assigned to you!");
     } catch (error) {
@@ -67,6 +82,8 @@ const AvailableRequestsScreen = () => {
   };
 
   return (
+    <ImageBackground source={bground} style={styles.background} resizeMode="cover">
+    
     <View style={styles.container}>
       <Text style={styles.title}>Available Cleaning Requests</Text>
 
@@ -95,14 +112,24 @@ const AvailableRequestsScreen = () => {
         contentContainerStyle={{ flexGrow: 1 }} // Prevents height issues
       />
     </View>
+    </ImageBackground>
+    
   );
 };
 
 const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   container: {
     flex: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
     padding: 20,
-    backgroundColor: "#fff",
+    paddingBottom:100,
   },
   title: {
     fontSize: 22,
