@@ -2,6 +2,7 @@ import "react-native-get-random-values";
 import React, { useState, useRef } from "react";
 import {
   View,
+  ImageBackground,
   Text,
   TextInput,
   TouchableOpacity,
@@ -9,6 +10,10 @@ import {
   ScrollView,
   Platform,
 } from "react-native";
+import Animated,{FadeIn, FadeInLeft, FadeInRight, FadeOut } from 'react-native-reanimated';
+import * as Haptics from "expo-haptics";
+import logo from "@/assets/images/logo.png";
+import bground from "@/assets/images/light-purple-glitter-background-nkx73.png"
 import DateTimePicker from "@react-native-community/datetimepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -43,6 +48,14 @@ const RequestCleaning = () => {
   const [errorMessage, setErrorMessage] = useState("");
 
   const locationRef = useRef(null);
+
+  const handleSubmit = () => {
+    // Add haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  
+    // Call your function to submit the request
+    submitCleaningRequest(location, date, time, additionalNotes, router);
+  };
 
   // ----- CLEAR ALL FIELDS -----
   const clearForm = () => {
@@ -177,14 +190,19 @@ const RequestCleaning = () => {
           }}
         />
       )}
-
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <ImageBackground source={bground} style={styles.background}>
+      <ScrollView contentContainerStyle={styles.overlay} keyboardShouldPersistTaps="handled">
+      {/*<ImageBackground source={bground} style={styles.background}>*/}
+        <View style={styles.logoContainer}>
+          <Animated.Image entering={FadeInRight.delay(300).duration(2000)} source={logo} style={styles.logo} />
+        </View>
+        
         <View style={styles.formWrapper}>
           <Text style={styles.title}>Request a Cleaning Service</Text>
 
           {/* Location */}
           <View style={styles.section}>
-            <Feather name="map-pin" size={20} color="#555" />
+            <Feather name="map-pin" size={22} color="#555" />
             <View style={styles.locationRow}>
               <GooglePlacesAutocomplete
                 ref={locationRef}
@@ -217,7 +235,7 @@ const RequestCleaning = () => {
           <View>
       {/* Date Picker */}
       <View style={styles.section}>
-        <Feather name="calendar" size={20} color="#555" />
+        <Feather name="calendar" size={22} color="#555" />
         {Platform.OS === "web" ? (
           <View style={styles.datePickerWrapper}>
             <DatePicker
@@ -270,7 +288,7 @@ const RequestCleaning = () => {
 
       {/* Time Picker */}
       <View style={styles.section}>
-        <Feather name="clock" size={20} color="#555" />
+        <Feather name="clock" size={22} color="#555" />
         {Platform.OS === "web" ? (
           <View style={styles.datePickerWrapper}>
             <DatePicker
@@ -324,10 +342,11 @@ const RequestCleaning = () => {
         )}
       </View>
     </View>
+    
 
           {/* Additional Notes */}
           <View style={styles.section}>
-            <Feather name="file-text" size={20} color="#555" />
+            <Feather name="file-text" size={22} color="#555" />
             <TextInput
               style={[styles.input, { height: 100 }]}
               placeholder="Additional notes (optional)"
@@ -338,14 +357,15 @@ const RequestCleaning = () => {
           </View>
 
           {/* Submit Button */}
-          <TouchableOpacity style={styles.button} onPress={submitCleaningRequest}>
+          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
             <Text style={styles.buttonText}>
               <Feather name="send" size={16} color="#fff" /> Submit Request
             </Text>
           </TouchableOpacity>
         </View>
+        {/*</ImageBackground>*/}
       </ScrollView>
-
+      </ImageBackground>
       {/* --- SUCCESS POPUP (Overlay) --- */}
       {showSuccessPopup && (
         <View style={styles.popupOverlay}>
@@ -372,17 +392,40 @@ const RequestCleaning = () => {
             </TouchableOpacity>
           </View>
         </View>
+        
       )}
     </>
   );
 };
 
 const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.3)", // Light transparency over background
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  background: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    resizeMode: "cover",
+  },
   container: {
+    flex: 1,
     paddingVertical: 40,
     paddingHorizontal: 20,
     backgroundColor: "#fff",
+    justifyContent: "center",
     alignItems: "center",
+  },
+  logo: { 
+    width: 150, 
+    height: 150, 
+    resizeMode: 'contain',
+    justifyContent: "center", 
+    marginBottom: 10 
   },
   formWrapper: {
     width: "100%",
@@ -415,13 +458,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
-    height: 55,
-    width: 55,
+    height: 45,
+    width: 45,
     borderWidth: 2,
     borderColor: "#ff4d4d",
   },
   pinEmoji: {
-    fontSize: 28,
+    fontSize: 30,
+    alignItems: "center",
+    justifyContent: "center",
   },
   input: {
     flex: 1,

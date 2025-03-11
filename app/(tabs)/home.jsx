@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import { View, ImageBackground, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import * as Location from "expo-location";
+import bground from "@/assets/images/light-purple-glitter-background-nkx73.png"
 import { db, auth } from "../firebaseConfig"; // Import Firestore and Auth
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 
@@ -63,6 +64,7 @@ const HomePage = () => {
   };
 
   return (
+    <ImageBackground source={bground} style={styles.background}>
     <View style={styles.container}>
       <Text style={styles.title}>Welcome to Magic Broom</Text>
       <Text style={styles.subtitle}>Your ultimate cleaning service platform</Text>
@@ -83,16 +85,21 @@ const HomePage = () => {
 
       {loading && <ActivityIndicator size="large" color="#ff9800" />} 
     </View>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+    justifyContent: "center",
+  },
   container: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-    backgroundColor: "#f5f5f5",
+    //backgroundColor: "#f5f5f5",
   },
   title: {
     fontSize: 24,
