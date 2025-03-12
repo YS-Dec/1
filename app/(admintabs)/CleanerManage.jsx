@@ -155,18 +155,6 @@ const AdminCleanerApplications = () => {
             <Text style={{ marginTop: 10, fontWeight: "bold" }}>Change User Role:</Text>
 
             <TouchableOpacity
-              onPress={() => updateUserRole(item.userId, "admin")}
-              style={{
-                backgroundColor: "#007bff",
-                padding: 10,
-                marginTop: 5,
-                borderRadius: 5,
-              }}
-            >
-              <Text style={{ color: "white", textAlign: "center" }}>Promote to Admin</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
               onPress={() => updateUserRole(item.userId, "cleaner")}
               style={{
                 backgroundColor: "#ffa500",

@@ -12,7 +12,9 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from "expo-file-system";  
-
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, onSnapshot, updateDoc, setDoc, getDoc } from "firebase/firestore";  
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { db, auth, storage } from "../firebaseConfig"; 
 
 const Profile = () => {
@@ -20,10 +22,10 @@ const Profile = () => {
   const [userInfo, setUserInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [uploading, setUploading] = useState(false); //  This fixes the error
-  const [applicationStatus, setApplicationStatus] = useState(null); //  Track cleaner application status
+  const [uploading, setUploading] = useState(false); // This fixes the error
+  const [applicationStatus, setApplicationStatus] = useState(null); // Track cleaner application status
 
-  // **Subscribe to Real-Time User Data**
+  // Subscribe to Real-Time User Data
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
