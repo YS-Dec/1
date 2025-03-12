@@ -33,7 +33,7 @@ const AdminCleanerApplications = () => {
     fetchApplications();
   }, []);
 
-  // ✅ Function to sign out the admin
+  // Function to sign out the admin
   const handleSignOut = async () => {
     try {
       await signOut(auth);
@@ -45,7 +45,7 @@ const AdminCleanerApplications = () => {
     }
   };
 
-  // ✅ Function to update Cleaner Application Status
+  // Function to update Cleaner Application Status
   const updateApplicationStatus = async (id, newStatus, userId) => {
     try {
       await updateDoc(doc(db, "cleanerApplications", id), { status: newStatus });
@@ -65,7 +65,7 @@ const AdminCleanerApplications = () => {
     }
   };
 
-  // ✅ Function to change user role
+  // Function to change user role
   const updateUserRole = async (userId, newRole) => {
     try {
       await updateDoc(doc(db, "users", userId), { role: newRole });

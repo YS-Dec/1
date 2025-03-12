@@ -12,12 +12,11 @@ import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
   signOut,
-  onAuthStateChanged,
 } from "firebase/auth";
 import { auth } from "../firebaseConfig";  
-import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import { db } from "../firebaseConfig";  
-import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, setDoc} from "firebase/firestore";
 
 const SignUpScreen = () => {
   const router = useRouter();
@@ -28,7 +27,7 @@ const SignUpScreen = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // 🔥 **Handle User Sign-Up & Email Verification**
+  // **Handle User Sign-Up & Email Verification**
   const handleSignUp = async () => {
     if (!fullName || !email || !password || !confirmPassword) {
       Alert.alert("Error", "All fields are required.");
@@ -41,38 +40,38 @@ const SignUpScreen = () => {
     }
 
     try {
-      console.log("🚀 Creating user...");
+      console.log("Creating user...");
 
-      // ✅ Create user in Firebase Auth
+      // Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      console.log("✅ User created:", user.email);
+      console.log("User created:", user.email);
 
-       // 🚀 Create Firestore entry immediately (status = "unverified")
+       // Create Firestore entry immediately (status = "unverified")
       await setDoc(doc(db, "users", user.uid), {
         fullName,
         email,
         profilePictureUrl: "",
         role: "user",
-        status: "unverified",  // 🔥 Default status
+        status: "unverified",  // Default status
         totalPoints: 0,
         totalRatings: 0,
         createdAt: new Date(),
       });
 
-      // ✅ Send Firebase's built-in email verification
+      // Send Firebase's built-in email verification
       await sendEmailVerification(user);
       Alert.alert("Verify Email", "A verification email has been sent. Please check your inbox.");
 
-      // 🚀 Sign out user to prevent login until verified
+      // Sign out user to prevent login until verified
       await signOut(auth);
 
-      // ✅ Redirect to login screen
+      // Redirect to login screen
       router.replace("(auth)");
 
     } catch (error) {
-      console.error("❌ Signup failed:", error);
+      console.error("Signup failed:", error);
       Alert.alert("Signup Error", error.message);
     }
   };
@@ -133,7 +132,7 @@ const SignUpScreen = () => {
   );
 };
 
-// 🔥 Styling
+// Styling
 const styles = StyleSheet.create({
   container: {
     flex: 1,

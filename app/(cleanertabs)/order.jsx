@@ -25,7 +25,7 @@ const CleanerAcceptedOrdersScreen = () => {
     return () => unsubscribe(); // Cleanup listener when component unmounts
   }, []);
 
-  // 🔥 Fetch the user's email when clicking on a request
+  // Fetch the user's email when clicking on a request
   const fetchUserEmail = async (userId, requestId) => {
     if (selectedEmail[requestId]) {
       // If email is already loaded, hide it on click
@@ -99,8 +99,8 @@ const CleanerAcceptedOrdersScreen = () => {
     </View>
   )}
   ListEmptyComponent={<Text style={styles.noRequests}>No accepted requests yet.</Text>}
-  contentContainerStyle={{ paddingBottom: 20 }} // ✅ Fixes bottom cut-off issue
-  showsVerticalScrollIndicator={false} // ✅ Hides default scroll indicator
+  contentContainerStyle={{ paddingBottom: 20 }} //  Fixes bottom cut-off issue
+  showsVerticalScrollIndicator={false} // Hides default scroll indicator
 />
 
     </View>

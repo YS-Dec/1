@@ -12,9 +12,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from "expo-file-system";  
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, doc, onSnapshot, updateDoc, setDoc, getDoc } from "firebase/firestore";  
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+
 import { db, auth, storage } from "../firebaseConfig"; 
 
 const Profile = () => {
@@ -22,10 +20,10 @@ const Profile = () => {
   const [userInfo, setUserInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [uploading, setUploading] = useState(false); // ✅ This fixes the error
-  const [applicationStatus, setApplicationStatus] = useState(null); // 🔥 Track cleaner application status
+  const [uploading, setUploading] = useState(false); //  This fixes the error
+  const [applicationStatus, setApplicationStatus] = useState(null); //  Track cleaner application status
 
-  // 🔥 **Subscribe to Real-Time User Data**
+  // **Subscribe to Real-Time User Data**
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -41,7 +39,7 @@ const Profile = () => {
           setLoading(false);
         });
 
-        // 🔥 Check if the user has already applied to be a cleaner
+        // Check if the user has already applied to be a cleaner
         const applicationRef = doc(db, "cleanerApplications", user.uid);
         getDoc(applicationRef).then((docSnapshot) => {
           if (docSnapshot.exists()) {
@@ -61,14 +59,14 @@ const Profile = () => {
   
   const pickImage = async () => {
     try {
-      // 🔥 Request permission before opening image picker
+      // Request permission before opening image picker
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission required', 'Allow access to photos to upload a profile picture.');
         return;
       }
   
-      // 🔥 Open the image picker
+      // Open the image picker
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
         allowsEditing: true,
@@ -76,13 +74,13 @@ const Profile = () => {
         quality: 1,
       });
   
-      // 🔥 Check if user canceled
+      // Check if user canceled
       if (result.canceled || !result.assets?.length) {
         console.log("Image selection canceled.");
         return;
       }
   
-      // 🔥 Upload the selected image
+      // Upload the selected image
       setUploading(true); // Show loading
       await uploadProfilePicture(result.assets[0].uri);
     } catch (error) {
@@ -101,7 +99,7 @@ const Profile = () => {
   
       let localUri = uri;
   
-      // 🔥 Check if the image is from iCloud (iOS) and download it locally
+      // Check if the image is from iCloud (iOS) and download it locally
       if (!uri.startsWith("file://")) {
         console.log("Downloading image from iCloud...");
         const downloadedFile = await FileSystem.downloadAsync(uri, FileSystem.documentDirectory + "tempImage.jpg");
@@ -109,11 +107,11 @@ const Profile = () => {
         console.log("Downloaded to:", localUri);
       }
   
-      // 🔥 Convert file to a blob
+      // Convert file to a blob
       const response = await fetch(localUri);
       const blob = await response.blob();
   
-      // 🔥 Upload to Firebase Storage (Overwrites old picture)
+      // Upload to Firebase Storage (Overwrites old picture)
       const filename = `profilePictures/${user.uid}/${Date.now()}.jpg`;
       const storageRef = ref(storage, filename);
       const uploadTask = await uploadBytesResumable(storageRef, blob);
@@ -133,12 +131,12 @@ const Profile = () => {
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
           console.log("File available at", downloadURL);
   
-          // 🔥 Update Firestore with new profile picture URL
+          // Update Firestore with new profile picture URL
           const userRef = doc(db, "users", user.uid);
-          await updateDoc(userRef, { profilePictureUrl: downloadURL });  // ✅ Fixed missing updateDoc
+          await updateDoc(userRef, { profilePictureUrl: downloadURL });  // Fixed missing updateDoc
 
   
-          // ✅ Update UI
+          // Update UI
           setUserInfo(prev => ({ ...prev, profilePictureUrl: downloadURL }));
 
           Alert.alert("Success", "Profile picture updated!");
@@ -151,7 +149,7 @@ const Profile = () => {
     }
   };
 
-  // 🔥 **Apply to Become a Cleaner**
+  // Apply to Become a Cleaner
   const applyToBeCleaner = async () => {
     try {
       const user = auth.currentUser;
@@ -160,7 +158,7 @@ const Profile = () => {
         return;
       }
 
-      // 🔥 Reference to the cleaner application in Firestore
+      // Reference to the cleaner application in Firestore
       const applicationRef = doc(db, "cleanerApplications", user.uid);
       const docSnapshot = await getDoc(applicationRef);
 
@@ -169,7 +167,7 @@ const Profile = () => {
         return;
       }
 
-      // 🔥 Create a new application in Firestore
+      // Create a new application in Firestore
       await setDoc(applicationRef, {
         userId: user.uid,
         email: user.email,
@@ -187,7 +185,7 @@ const Profile = () => {
     }
   };
 
-  // 🔥 **Sign Out**
+  // Sign Out
   const handleSignOut = async () => {
     try {
       await AsyncStorage.clear();
@@ -197,7 +195,7 @@ const Profile = () => {
     }
   };
 
-  // **Loading State**
+  // Loading State
   if (loading) {
     return (
       <View style={styles.container}>
@@ -206,7 +204,7 @@ const Profile = () => {
     )
   };
 
-  // **Error State**
+  // Error State
   if (error) {
     return (
       <View style={styles.container}>
@@ -258,7 +256,7 @@ const Profile = () => {
   );
 };
 
-// **Styles**
+// Styles
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#f9f9f9', alignItems: 'center' },
   header: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },

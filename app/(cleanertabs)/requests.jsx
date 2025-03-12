@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet,ImageBackground } from "react-native";
 import { collection, getDocs, updateDoc, doc, getDoc } from "firebase/firestore";
-import { db, auth } from "../firebaseConfig"; // Ensure this path is correct
+import { db, auth } from "../firebaseConfig";
 import bground from "@/assets/images/light-purple-glitter-background-nkx73.png"
 
 
@@ -31,7 +31,7 @@ const AvailableRequestsScreen = () => {
   // Function to accept a cleaning task
   const handleAcceptRequest = async (requestId) => {
     const user = auth.currentUser;
-    const cleanerEmail = user.email; // ✅ Get email from Firebase Auth
+    const cleanerEmail = user.email; // Get email from Firebase Auth
 
   
     if (!user) {
@@ -67,10 +67,10 @@ const AvailableRequestsScreen = () => {
       await updateDoc(requestRef, {
         status: "accepted",
         cleanerId: user.uid,
-        cleanerEmail: cleanerEmail, // ✅ Store cleaner's email
+        cleanerEmail: cleanerEmail, // Store cleaner's email
       });
 
-      // ✅ Remove the accepted request from the UI
+      // Remove the accepted request from the UI
       setRequests((prevRequests) => prevRequests.filter((req) => req.id !== requestId));
 
   

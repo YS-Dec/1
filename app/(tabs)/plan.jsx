@@ -134,14 +134,14 @@ const Plan = () => {
 };
 
   const openRatingModal = (request) => {
-    console.log("🟡 Opening rating modal for request:", request);
+    console.log("Opening rating modal for request:", request);
     setSelectedRequest(request);
     setRating(request.rating || 0);
     setRatingModalVisible(true);
   };
 
   const openEditModal = (request) => {
-    console.log("✏️ Opening edit modal for request:", request);
+    console.log("Opening edit modal for request:", request);
     setSelectedRequest(request);
     setNewLocation(request.location || ""); // Default to current location
     setNewTime(request.time || ""); // Default to current time
@@ -150,7 +150,7 @@ const Plan = () => {
     setEditModalVisible(true);
   };
 
-  // ⭐ Function to Submit Rating
+  // Function to Submit Rating
   const submitRating = async () => {
     if (!selectedRequest || isSubmitting) return; // Prevent multiple clicks
 
@@ -164,14 +164,14 @@ const Plan = () => {
       setRequests(prev => prev.map(req => (req.id === selectedRequest.id ? { ...req, rating } : req)));
       setRatingModalVisible(false);
     } catch (error) {
-      console.error("❌ Error updating rating:", error);
+      console.error("Error updating rating:", error);
       Alert.alert("Error", "Failed to submit rating.");
     }finally {
       setIsSubmitting(false); // Re-enable button after operation (optional)
     }
   };
 
-  // ⭐ Render Star Icons for Rating
+  // Render Star Icons for Rating
   const renderStars = (rating, onPress) => {
     return (
       <View style={{ flexDirection: "row" }}>
@@ -226,7 +226,7 @@ const Plan = () => {
   };
 
 
-  // 🔥 Edit a request
+  // Edit a request
   const editRequest = async () => {
     if (!selectedRequest) return;
 
@@ -241,7 +241,7 @@ const Plan = () => {
     formattedDate = newDate instanceof Date ? newDate.toISOString().split("T")[0] : "";
   }
 
-  // 🔥 Validate Time Format
+  // Validate Time Format
   const timeRegex12u = /^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/i; // 12-hour format (HH:MM AM/PM)
   const timeRegex12l = /^(0?[1-9]|1[0-2]):[0-5][0-9] (am|pm)$/i; // 12-hour format (HH:MM am/pm)
 

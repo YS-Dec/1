@@ -4,15 +4,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import logo from "@/assets/images/logo.png";
 import * as Haptics from "expo-haptics";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
-import Animated,{FadeIn, FadeInLeft, FadeInRight, FadeOut } from 'react-native-reanimated';
+import Animated,{FadeInRight} from 'react-native-reanimated';
 import { 
   signInWithEmailAndPassword, 
   sendPasswordResetEmail, 
   sendEmailVerification, 
   signOut 
 } from "firebase/auth";
-import { doc, getDocs, getDoc, updateDoc, collection, query, where } from "firebase/firestore";
-import { db, auth, storage } from "../firebaseConfig"; 
+import { doc, getDoc} from "firebase/firestore";
+import { db, auth} from "../firebaseConfig"; 
 
 
 
@@ -23,7 +23,7 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // 🔥 **Login Handler with Email Verification Check**
+  // **Login Handler with Email Verification Check**
   const handleLogin = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
@@ -33,7 +33,7 @@ const LoginPage = () => {
     }
   
     try {
-      console.log("🚀 Attempting login...");
+      console.log("Attempting login...");
   
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
@@ -41,30 +41,30 @@ const LoginPage = () => {
         throw new Error("Authentication failed. No user returned.");
       }
   
-      console.log("✅ Firebase Auth User:", user.email);
+      console.log("Firebase Auth User:", user.email);
   
-      // 🔥 **Ensure Firebase refreshes email verification status**
+      // **Ensure Firebase refreshes email verification status**
       await user.reload();
       const refreshedUser = auth.currentUser;
       
       if (!refreshedUser.emailVerified) {
-        console.log("❌ Email is not verified!");
+        console.log("Email is not verified!");
         Alert.alert("Email Not Verified", "Please check your email and verify your account before logging in.");
         await signOut(auth);  // Log the user out if not verified
         return;
       }
 
-      console.log("✅ Email verified, proceeding with login...");
+      console.log("Email verified, proceeding with login...");
       
       router.replace("(tabs)");
       
       Alert.alert("Success", "Login successful!");
   
-      console.log("✅ User logged in successfully!");
+      console.log("User logged in successfully!");
       await AsyncStorage.setItem("email", email);
       await AsyncStorage.setItem("authToken", user.accessToken);
     } catch (error) {
-      console.error("❌ Login failed:", error);
+      console.error("Login failed:", error);
       Alert.alert("Login Error", error.message);
     }
   };
@@ -76,7 +76,7 @@ const LoginPage = () => {
     }
   
     try {
-      console.log("🚀 Attempting Cleaner login...");
+      console.log("Attempting Cleaner login...");
   
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
@@ -84,20 +84,20 @@ const LoginPage = () => {
         throw new Error("Authentication failed. No user returned.");
       }
   
-      console.log("✅ Firebase Auth Cleaner:", user.email);
+      console.log("Firebase Auth Cleaner:", user.email);
   
-      // 🔥 Refresh user data to check email verification
+      // Refresh user data to check email verification
       await user.reload();
       const refreshedUser = auth.currentUser;
   
       if (!refreshedUser.emailVerified) {
-        console.log("❌ Email is not verified!");
+        console.log("Email is not verified!");
         Alert.alert("Email Not Verified", "Please check your email and verify your account before logging in.");
         await signOut(auth);
         return;
       }
   
-      // ✅ **Fetch User Role from Firestore**
+      // Fetch User Role from Firestore
       const userDoc = await getDoc(doc(db, "users", user.uid));
       if (!userDoc.exists()) {
         throw new Error("User data not found in database.");
@@ -106,9 +106,9 @@ const LoginPage = () => {
       const userData = userDoc.data();
       const userRole = userData.role; // "cleaner" or "user"
   
-      console.log("✅ User Role:", userRole);
+      console.log("User Role:", userRole);
   
-      // ✅ **Redirect Based on Role**
+      // Redirect Based on Role
       if (userRole === "cleaner") {
         console.log("Replacing to cleaner tab")
         router.push("(cleanertabs)/requests");
@@ -118,12 +118,12 @@ const LoginPage = () => {
         return;
       }
   
-      console.log("✅ Cleaner logged in successfully!");
+      console.log("Cleaner logged in successfully!");
       await AsyncStorage.setItem("email", email);
       await AsyncStorage.setItem("authToken", user.accessToken);
       await AsyncStorage.setItem("userRole", userRole);
     } catch (error) {
-      console.error("❌ Cleaner Login failed:", error);
+      console.error("Cleaner Login failed:", error);
       Alert.alert("Login Error", error.message);
     }
   };
@@ -135,7 +135,7 @@ const LoginPage = () => {
     }
   
     try {
-      console.log("🚀 Attempting Admin login...");
+      console.log("Attempting Admin login...");
   
       const AdminCredential = await signInWithEmailAndPassword(auth, email, password);
       const Admin = AdminCredential.user;
@@ -143,20 +143,20 @@ const LoginPage = () => {
         throw new Error("Authentication failed. No user returned.");
       }
   
-      console.log("✅ Firebase Auth Admin:", Admin.email);
+      console.log("Firebase Auth Admin:", Admin.email);
   
-      // 🔥 Refresh user data to check email verification
+      // Refresh user data to check email verification
       await Admin.reload();
       const refreshedAdmin = auth.currentUser;
   
       if (!refreshedAdmin.emailVerified) {
-        console.log("❌ Email is not verified!");
+        console.log("Email is not verified!");
         Alert.alert("Email Not Verified", "Please check your email and verify your account before logging in.");
         await signOut(auth); // Use `auth` instead of `Admin`
         return;
       }
   
-      // ✅ Wait for token result to verify admin privileges
+      // Wait for token result to verify admin privileges
       const idTokenResult = await Admin.getIdTokenResult();
       if (!idTokenResult.claims.admin) {
         Alert.alert("Access Denied", "You do not have admin privileges.");
@@ -164,8 +164,8 @@ const LoginPage = () => {
         return;
       }
   
-      // ✅ Admin authentication successful
-      console.log("✅ Admin logged in successfully!");
+      // Admin authentication successful
+      console.log("Admin logged in successfully!");
       await AsyncStorage.setItem("email", email);
       await AsyncStorage.setItem("authToken", Admin.accessToken);
       await AsyncStorage.setItem("userRole", "admin"); // Explicitly store admin role
@@ -173,7 +173,7 @@ const LoginPage = () => {
       // ✅ Navigate to admin panel
       router.replace("(admintabs)/CleanerManage");
     } catch (error) {
-      console.error("❌ Admin Login failed:", error);
+      console.error("Admin Login failed:", error);
       Alert.alert("Login Error", error.message);
     }
   };
@@ -181,7 +181,7 @@ const LoginPage = () => {
 
 
 
-  // 🔥 **Handle Forgot Password**
+  // **Handle Forgot Password**
   const handleForgotPassword = async () => {
     if (!email) {
       Alert.alert("Error", "Please enter your email address.");
@@ -191,12 +191,12 @@ const LoginPage = () => {
       await sendPasswordResetEmail(auth, email);
       Alert.alert("Success", "Password reset email sent! Check your inbox.");
     } catch (error) {
-      console.error("❌ Password Reset Error:", error);
+      console.error("Password Reset Error:", error);
       Alert.alert("Error", error.message);
     }
   };
 
-  // 🔥 **Resend Verification Email**
+  // **Resend Verification Email**
   const handleResendVerification = async (emailInput, passwordInput) => {
     try {  
       if (!email || !password) {
@@ -210,30 +210,30 @@ const LoginPage = () => {
         throw new Error("Authentication failed. No user returned. Please Signup first.");
       }
 
-      console.log("✅ Firebase Auth User:", user.email);
+      console.log("Firebase Auth User:", user.email);
 
       await user.reload();
       const refreshedUser = auth.currentUser;
   
 
-      // ✅ **Check if already verified**
+      // Check if already verified
       if (refreshedUser.emailVerified) {
         Alert.alert("Already Verified", "Your email is already verified.");
       }
       else if (!refreshedUser.emailVerified) {
         await sendEmailVerification(user);
         Alert.alert("Verification email sended.");
-        console.log("✅ Verification email resent to:", user.email);
+        console.log("Verification email resent to:", user.email);
         await signOut(auth);  // Log the user out if not verified
         return;
       }  
     } catch (error) {
-      console.error("❌ Resend Verification Error:", error);
+      console.error("Resend Verification Error:", error);
       Alert.alert("Error, Please try again later", error.message);
     }
   };
 
-  // 🔥 **Go to Sign-Up Page**
+  // **Go to Sign-Up Page**
   const goToSignUp = () => {
     router.push('/signup');
   };
@@ -305,7 +305,7 @@ const LoginPage = () => {
   );
 };
 
-// 🔥 **Styles**
+// Styles
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
