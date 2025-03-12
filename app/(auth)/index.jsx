@@ -24,6 +24,7 @@ const LoginPage = () => {
   // Manage email and password states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
   const [loading, setLoading] = useState(false);
   // 🔥 **Login Handler with Email Verification Check**
   const handleLogin = async () => {
@@ -58,6 +59,14 @@ const LoginPage = () => {
         return;
       }
 
+      console.log("✅ Email verified, proceeding with login...");
+      
+      //loading screen before navigating
+      setTimeout(() => {
+        setLoading(false);
+        router.replace("(tabs)");
+      }, 1500);
+  
       console.log("✅ User logged in successfully!");
       await AsyncStorage.setItem("email", email);
       await AsyncStorage.setItem("authToken", user.accessToken);
@@ -70,11 +79,79 @@ const LoginPage = () => {
 
     } catch (error) {
       console.error("❌ Login failed:", error);
-      Alert.alert("Login Error", error.message);
-
       setLoading(false);
+      Alert.alert("Login Error", error.message);
     }
   };
+
+  const handleCleanerLogin = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    if (!email || !password) {
+      Alert.alert("Error", "Please enter both email and password.");
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      console.log("🚀 Attempting Cleaner login...");
+  
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      if (!user) {
+        throw new Error("Authentication failed. No user returned.");
+      }
+  
+      console.log("✅ Firebase Auth Cleaner:", user.email);
+  
+      // 🔥 Refresh user data to check email verification
+      await user.reload();
+      const refreshedUser = auth.currentUser;
+  
+      if (!refreshedUser.emailVerified) {
+        console.log("❌ Email is not verified!");
+        Alert.alert("Email Not Verified", "Please check your email and verify your account before logging in.");
+        await signOut(auth);
+        return;
+      }
+  
+      // ✅ **Fetch User Role from Firestore**
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (!userDoc.exists()) {
+        throw new Error("User data not found in database.");
+      }
+  
+      const userData = userDoc.data();
+      const userRole = userData.role; // "cleaner" or "user"
+  
+      console.log("✅ User Role:", userRole);
+  
+      // ✅ **Redirect Based on Role**
+      if (userRole === "cleaner") {
+        console.log("Replacing to cleaner tab")
+        //loading screen before navigating
+        setTimeout(() => {
+          setLoading(false);
+          router.push("(cleanertabs)/requests");
+        }, 2000);
+      } else {
+        Alert.alert("Error", "This account is not registered as a cleaner.");
+        await signOut(auth);
+        return;
+      }
+
+      console.log("✅ Cleaner logged in successfully!");
+      await AsyncStorage.setItem("email", email);
+      await AsyncStorage.setItem("authToken", user.accessToken);
+      await AsyncStorage.setItem("userRole", userRole);
+    } catch (error) {
+      console.error("❌ Cleaner Login failed:", error);
+      setLoading(false);
+      Alert.alert("Login Error", error.message);
+    }
+  };
+
+
 
   // 🔥 **Handle Forgot Password**
   const handleForgotPassword = async () => {
@@ -132,7 +209,6 @@ const LoginPage = () => {
   const goToSignUp = () => {
     router.push('/signup');
   };
-  
   return (
     <View style={styles.container}>
       {/*loading screen on successful login*/}
@@ -187,6 +263,10 @@ const LoginPage = () => {
           <TouchableOpacity style={styles.button} onPress={handleLogin}>
             <Text style={styles.buttonText}>Login</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={handleCleanerLogin}>
+            <Text style={styles.buttonText}>Login as Cleaner</Text>
+          </TouchableOpacity>
+
           
           <TouchableOpacity style={styles.signupButton} onPress={goToSignUp}>
             <Text style={styles.signupText}>Don't have an account? Sign Up</Text>
@@ -204,6 +284,7 @@ const LoginPage = () => {
     </View>
   );
 };
+  
 
 // 🔥 **Styles**
 const styles = StyleSheet.create({
