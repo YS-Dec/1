@@ -128,6 +128,57 @@ const LoginPage = () => {
     }
   };
 
+  const handleAdminLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please enter both email and password.");
+      return;
+    }
+  
+    try {
+      console.log("🚀 Attempting Admin login...");
+  
+      const AdminCredential = await signInWithEmailAndPassword(auth, email, password);
+      const Admin = AdminCredential.user;
+      if (!Admin) {
+        throw new Error("Authentication failed. No user returned.");
+      }
+  
+      console.log("✅ Firebase Auth Admin:", Admin.email);
+  
+      // 🔥 Refresh user data to check email verification
+      await Admin.reload();
+      const refreshedAdmin = auth.currentUser;
+  
+      if (!refreshedAdmin.emailVerified) {
+        console.log("❌ Email is not verified!");
+        Alert.alert("Email Not Verified", "Please check your email and verify your account before logging in.");
+        await signOut(auth); // Use `auth` instead of `Admin`
+        return;
+      }
+  
+      // ✅ Wait for token result to verify admin privileges
+      const idTokenResult = await Admin.getIdTokenResult();
+      if (!idTokenResult.claims.admin) {
+        Alert.alert("Access Denied", "You do not have admin privileges.");
+        await signOut(auth); // Log out unauthorized user
+        return;
+      }
+  
+      // ✅ Admin authentication successful
+      console.log("✅ Admin logged in successfully!");
+      await AsyncStorage.setItem("email", email);
+      await AsyncStorage.setItem("authToken", Admin.accessToken);
+      await AsyncStorage.setItem("userRole", "admin"); // Explicitly store admin role
+  
+      // ✅ Navigate to admin panel
+      router.replace("(admintabs)/CleanerManage");
+    } catch (error) {
+      console.error("❌ Admin Login failed:", error);
+      Alert.alert("Login Error", error.message);
+    }
+  };
+
+
 
 
   // 🔥 **Handle Forgot Password**
@@ -233,6 +284,9 @@ const LoginPage = () => {
       </TouchableOpacity>
       <TouchableOpacity style={styles.button} onPress={handleCleanerLogin}>
         <Text style={styles.buttonText}>Login as Cleaner</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.button} onPress={handleAdminLogin}>
+        <Text style={styles.buttonText}>Admin login</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.signupButton} onPress={goToSignUp}>

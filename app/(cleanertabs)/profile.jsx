@@ -242,7 +242,7 @@ const Profile = () => {
       {/* Display Application Status */}
       {applicationStatus === "pending" ? (
         <Text style={styles.pendingText}>Your cleaner application is under review.</Text>
-      ) : applicationStatus === "complete" ? (
+      ) : applicationStatus === "Approved" ? (
         <Text style={styles.pendingText}>✅ You are logged in as a Cleaner.</Text>
       ) : (
         <TouchableOpacity style={styles.cleanerButton} onPress={applyToBeCleaner}>

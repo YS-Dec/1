@@ -34,11 +34,11 @@ const CleanerAcceptedOrdersScreen = () => {
     }
 
     try {
-      const userRef = doc(db, "users", userId);
-      const userSnap = await getDoc(userRef);
+      const cleaningrequestRef = doc(db, "cleaningRequests", requestId);
+      const requestSnap = await getDoc(cleaningrequestRef);
 
-      if (userSnap.exists()) {
-        const email = userSnap.data().email;
+      if (requestSnap.exists()) {
+        const email = requestSnap.data().userEmail;
         setSelectedEmail((prev) => ({ ...prev, [requestId]: email })); // Store email
       } else {
         setSelectedEmail((prev) => ({ ...prev, [requestId]: "Email not found" }));
