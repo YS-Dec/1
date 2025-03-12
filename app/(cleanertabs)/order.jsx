@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { View, Alert, Text, FlatList, StyleSheet, TouchableOpacity } from "react-native";
+import { View, ImageBackground, Alert, Text, FlatList, StyleSheet, TouchableOpacity } from "react-native";
 import { collection, query, where, onSnapshot, getDoc, doc, updateDoc } from "firebase/firestore";
 import { db, auth } from "../firebaseConfig"; // Ensure this path is correct
+import bground from "@/assets/images/light-purple-glitter-background-nkx73.png"
 
 const CleanerAcceptedOrdersScreen = () => {
   const [acceptedRequests, setAcceptedRequests] = useState([]);
@@ -63,6 +64,7 @@ const CleanerAcceptedOrdersScreen = () => {
   };
 
   return (
+    <ImageBackground source={bground} style={styles.background} resizeMode="cover">  
     <View style={styles.container}>
       <Text style={styles.title}>Your Accepted Cleaning Requests</Text>
       <FlatList
@@ -104,14 +106,22 @@ const CleanerAcceptedOrdersScreen = () => {
 />
 
     </View>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   container: {
     flexGrow: 1,
     padding: 20,
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
     paddingBottom:100,
   },
   title: {
