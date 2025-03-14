@@ -1,0 +1,173 @@
+# JavaScript Style Guide
+
+## 1. General Formatting
+### 1.1 Indentation
+- Use 2 spaces for indentation (no tabs).
+
+### 1.2 Line Length
+- Limit lines to 80-100 characters.
+
+### 1.3 Semicolons
+- Always use semicolons to terminate statements.
+
+### 1.4 Quotes
+- Use single quotes (`'`) for strings, unless you need to use an apostrophe inside a string:
+  javascript
+  const message = 'Hello, world!';
+  const apostrophe = "It's a sunny day.";
+  
+
+### 1.5 Trailing Commas
+- Use trailing commas in multi-line objects and arrays:
+  javascript
+  const user = {
+    name: 'Alice',
+    age: 25,
+  };
+
+
+### 1.6 Whitespace
+- Place one space before the opening brace `{` in blocks.
+- Use one space after `if`, `for`, `while`, etc.
+- No spaces inside parentheses:
+  ```javascript
+  if (isValid) {
+    console.log('Valid');
+  }
+  ```
+
+## 2. Variables and Constants
+### 2.1 Use `const` and `let`
+- Use `const` by default, and `let` only when reassignment is needed:
+  ```javascript
+  const name = 'Alice';
+  let age = 25;
+  age += 1;
+  ```
+
+### 2.2 Naming Conventions
+- Use **camelCase** for variables and functions.
+- Use **PascalCase** for classes and constructors.
+- Use **UPPER_CASE** for constants:
+  ```javascript
+  const MAX_USERS = 100;
+  ```
+
+## 3. Functions
+### 3.1 Use Arrow Functions
+- Prefer **arrow functions** for shorter syntax:
+  ```javascript
+  const add = (a, b) => a + b;
+  ```
+
+### 3.2 Function Declarations
+- Use function declarations for named functions:
+  ```javascript
+  function greet(name) {
+    return `Hello, ${name}!`;
+  }
+  ```
+
+### 3.3 Default Parameters
+- Provide default values for function parameters:
+  ```javascript
+  function greet(name = 'Guest') {
+    return `Hello, ${name}!`;
+  }
+  ```
+
+## 4. Objects and Arrays
+### 4.1 Object Destructuring
+- Use object destructuring when accessing properties:
+  ```javascript
+  const user = { name: 'Alice', age: 25 };
+  const { name, age } = user;
+  ```
+
+### 4.2 Spread Operator
+- Use the spread operator to create copies of arrays and objects:
+  ```javascript
+  const numbers = [1, 2, 3];
+  const moreNumbers = [...numbers, 4, 5];
+  ```
+
+## 5. Conditionals and Loops
+### 5.1 Strict Equality
+- Always use **strict equality (`===`)** over loose equality (`==`).
+
+### 5.2 Ternary Operator
+- Use **ternary operators** for short conditional expressions:
+  ```javascript
+  const status = age >= 18 ? 'Adult' : 'Minor';
+  ```
+
+### 5.3 Avoid Nested Ternary Operators
+- Prefer `if...else` over deeply nested ternary operators for readability.
+
+## 6. Error Handling
+### 6.1 Try-Catch
+- Use `try...catch` for handling errors:
+  ```javascript
+  try {
+    fetchData();
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  }
+  ```
+
+### 6.2 Graceful Degradation
+- Provide fallback values where necessary:
+  ```javascript
+  const data = response.data || 'Default value';
+  ```
+
+## 7. Modules and Imports
+### 7.1 Use ES6 Modules
+- Use `import` and `export` instead of CommonJS `require()`.
+  ```javascript
+  import { calculateTotal } from './utils.js';
+  export function add(a, b) {
+    return a + b;
+  }
+  ```
+
+## 8. Code Documentation
+### 8.1 JSDoc Comments
+- Use JSDoc for function documentation:
+  ```javascript
+  /**
+   * Adds two numbers together.
+   * @param {number} a - The first number.
+   * @param {number} b - The second number.
+   * @returns {number} - The sum of a and b.
+   */
+  function add(a, b) {
+    return a + b;
+  }
+  ```
+
+## 9. Best Practices
+### 9.1 Avoid Global Variables
+- Encapsulate code within functions or modules to prevent polluting the global scope.
+
+### 9.2 Avoid `var`
+- Use `const` and `let` instead of `var`.
+
+### 9.3 Use Meaningful Names
+- Use descriptive names instead of single-letter variables:
+  ```javascript
+  const totalPrice = price * quantity;
+  ```
+
+## 10. Testing
+### 10.1 Write Unit Tests
+- Use Jest or Mocha for writing tests:
+  ```javascript
+  test('adds two numbers', () => {
+    expect(add(2, 3)).toBe(5);
+  });
+  ```
+
+---
+Following these guidelines will help ensure your JavaScript code is clean, consistent, and maintainable!
+
