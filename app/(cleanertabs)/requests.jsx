@@ -30,7 +30,6 @@ const AvailableRequestsScreen = () => {
 
   /**
    * Fetches all pending cleaning requests from Firestore
-   * Filters only requests with "pending" status.
    */
   const fetchRequests = async () => {
     try {
