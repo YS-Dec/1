@@ -193,7 +193,7 @@ const RequestCleaning = () => {
           }}
         />
       )}
-      <ImageBackground source={bground} style={styles.background}>
+      <ImageBackground source={bground} style={styles.background} resizeMode="cover">
       <ScrollView contentContainerStyle={styles.overlay} keyboardShouldPersistTaps="handled">
       {/*<ImageBackground source={bground} style={styles.background}>*/}
         <View style={styles.logoContainer}>
@@ -412,9 +412,12 @@ const styles = StyleSheet.create({
   },
   background: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    resizeMode: "cover",
+    width: "100%",   // Ensure full width
+    height: "100%",  // Ensure full height
+    position: "absolute",
+    top: 0,
+    left: 0,
+    resizeMode: "cover", // Try moving this inside the ImageBackground component
   },
   container: {
     flex: 1,
