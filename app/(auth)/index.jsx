@@ -54,6 +54,7 @@ const LoginPage = () => {
       if (!refreshedUser.emailVerified) {
         console.log("Email is not verified!");
         Alert.alert("Email Not Verified", "Please check your email and verify your account before logging in.");
+        setLoading(false);
         await signOut(auth);  // Log the user out if not verified
         return;
       }
@@ -141,6 +142,7 @@ const LoginPage = () => {
       await AsyncStorage.setItem("userRole", userRole);
     } catch (error) {
       console.error("Cleaner Login failed:", error);
+      setLoading(false);
       Alert.alert("Login Error", error.message);
     }
   };

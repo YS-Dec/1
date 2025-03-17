@@ -404,7 +404,7 @@ const RequestCleaning = () => {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.3)", // Light transparency over background
+    backgroundColor: "rgba(255, 255, 255, 0.3)", 
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -412,12 +412,12 @@ const styles = StyleSheet.create({
   },
   background: {
     flex: 1,
-    width: "100%",   // Ensure full width
-    height: "100%",  // Ensure full height
+    width: "100%",  
+    height: "100%", 
     position: "absolute",
     top: 0,
     left: 0,
-    resizeMode: "cover", // Try moving this inside the ImageBackground component
+    resizeMode: "cover", 
   },
   container: {
     flex: 1,
