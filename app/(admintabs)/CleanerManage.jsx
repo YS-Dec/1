@@ -54,6 +54,9 @@ const AdminCleanerApplications = () => {
       if (newStatus === "Approved") {
         await updateDoc(doc(db, "users", userId), { role: "cleaner" });
       }
+      if (newStatus === "Rejected") {
+        await updateDoc(doc(db, "users", userId), { role: "user" });
+      }
 
       Alert.alert("Success", `Application status updated to ${newStatus}`);
       setApplications((prev) =>

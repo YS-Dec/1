@@ -32,8 +32,8 @@ import backgroundImage from "@/assets/images/light-purple-glitter-background-nkx
 const COLOR_PRIMARY = "#BF40BF";
 
 /**
- * Plan tab displays cleaning requests for users.
- * Allows request editing, rating, and deletion.
+ * Plan tab displays cleaning requests for users
+ * Allows request editing, rating, and deletion
  */
 const Plan = () => {
   const auth = getAuth();
@@ -52,8 +52,9 @@ const Plan = () => {
 
   // State variables for editing requests
   const [newLocation, setNewLocation] = useState("");
-  const [newTime, setNewTime] = useState("");
+  const [newTime, setNewTime] = useState(new Date());
   const [newDate, setNewDate] = useState(new Date());
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   useEffect(() => {
@@ -165,6 +166,32 @@ const Plan = () => {
   };
 
   /**
+   * Parse the time to Date object
+   */
+  const parseTimeString = (timeStr) => {
+    if (!timeStr || typeof timeStr !== "string") return new Date();
+  
+    const parts = timeStr.split(" ");
+    if (parts.length !== 2) return new Date();
+  
+    const [time, modifier] = parts;
+    if (!modifier || (modifier.toUpperCase() !== "AM" && modifier.toUpperCase() !== "PM")) {
+      return new Date();
+    }
+  
+    let [hours, minutes] = time.split(":").map(Number);
+    if (isNaN(hours) || isNaN(minutes)) return new Date();
+  
+    if (modifier.toUpperCase() === "PM" && hours < 12) hours += 12;
+    if (modifier.toUpperCase() === "AM" && hours === 12) hours = 0;
+  
+    const date = new Date();
+    date.setHours(hours, minutes, 0, 0);
+    return date;
+  };
+
+
+  /**
    * Opens the edit modal for a specific request
    * @param {Object} request The request object to edit
  */
@@ -172,7 +199,7 @@ const Plan = () => {
     console.log("Opening edit modal for request:", request);
     setSelectedRequest(request);
     setNewLocation(request.location || "");
-    setNewTime(request.time || "");
+    setNewTime(parseTimeString(request.time)); // Use the helper function here
     setNewDate(request.date ? new Date(request.date) : new Date());
 
     setEditModalVisible(true);
@@ -279,8 +306,9 @@ const Plan = () => {
   const editRequest = async () => {
     if (!selectedRequest) return;
 
-    let formattedDate = newDate;
-    
+    let formattedDate = newDate instanceof Date ? newDate.toISOString().split("T")[0] : newDate;
+    let formattedTime = newTime ? newTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""; 
+
     if (Platform.OS === "web") {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -292,36 +320,26 @@ const Plan = () => {
       formattedDate = newDate instanceof Date ? newDate.toISOString().split("T")[0] : "";
     }
 
-    // Validate Time Format
-    const timeRegex12u = /^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/i; // 12-hour format (HH:MM AM/PM)
-    const timeRegex12l = /^(0?[1-9]|1[0-2]):[0-5][0-9] (am|pm)$/i; // 12-hour format (HH:MM am/pm)
-
-    if (!timeRegex12u.test(newTime) && !timeRegex12l.test(newTime) ) {
-      Alert.alert("Invalid Time", "Please enter a valid time in HH:MM AM/PM or am/pm format.");
-      return;
-    }
-
-      try {
-        const requestRef = doc(db, "cleaningRequests", selectedRequest.id);
-        await updateDoc(requestRef, { 
-          location: newLocation, 
-          time: newTime,
-          date: newDate.toISOString().split("T")[0] // Convert to YYYY-MM-DD format
-
-        });
+    try {
+      const requestRef = doc(db, "cleaningRequests", selectedRequest.id);
+      await updateDoc(requestRef, { 
+        location: newLocation, 
+        time: formattedTime,
+        date: formattedDate,
+      });
     
-        Alert.alert("Updated!", "The request has been updated.");
+      Alert.alert("Updated!", "The request has been updated.");
 
-        // Update local state to reflect the change
-        setRequests(prev =>
-          prev.map(req =>
-            req.id === selectedRequest.id
-              ? { ...req, location: newLocation, time: newTime, date: formattedDate }
-              : req
-            )
-        );
+      // Update local state to reflect the change
+      setRequests(prev =>
+        prev.map(req =>
+          req.id === selectedRequest.id
+            ? { ...req, location: newLocation, time: newTime, date: formattedDate }
+            : req
+          )
+      );
     
-        setEditModalVisible(false);
+      setEditModalVisible(false);
       } catch (error) {
         console.error("Error updating request:", error);
         Alert.alert("Error", "Failed to update request.");
@@ -351,8 +369,8 @@ const Plan = () => {
   const renderRequest = ({ item }) => (
     <View style={[styles.requestCard, { borderColor: COLOR_PRIMARY }]}>
       <Text style={[styles.serviceType, { color: COLOR_PRIMARY }]}>{item.location}</Text>
-      <Text style={styles.details}>📅 Date: {item.date}</Text>
-      <Text style={styles.details}>🕒 Time: {item.time}</Text>
+      <Text style={styles.details}>📅 Date: {item.date instanceof Date ? item.date.toDateString() : item.date}</Text>
+      <Text style={styles.details}>🕒 Time: {item.time instanceof Date ? item.time.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : item.time}</Text>
       <Text style={styles.details}>📝 Notes: {item.additionalNotes || "N/A"}</Text>
       <Text style={styles.status}>Status: {item.status}</Text>
 
@@ -476,12 +494,18 @@ const Plan = () => {
                 placeholder="Enter new location"
               />
 
-              <TextInput
-                style={styles.input}
-                value={newTime}
-                onChangeText={setNewTime}
-                placeholder="Enter new time"
-              />
+              <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowTimePicker(true)}>
+              <Text style={styles.dateText}>{newTime ? newTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "Select Time"}</Text>
+              </TouchableOpacity>
+
+              {showTimePicker && (
+                <DateTimePicker value={newTime} mode="time" display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, selectedTime) => {setShowTimePicker(false);
+                  if (selectedTime !== undefined) {
+                    setNewTime(selectedTime);
+                  }
+                }}/>
+              )}
 
               <Text style={styles.label}>Select Date:</Text>
 
