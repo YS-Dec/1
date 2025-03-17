@@ -1,18 +1,37 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet,ImageBackground } from "react-native";
-import { collection, getDocs, updateDoc, doc, getDoc } from "firebase/firestore";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  ImageBackground,
+} from "react-native";
+import {
+  collection,
+  getDocs,
+  updateDoc,
+  doc,
+  getDoc,
+} from "firebase/firestore";
 import { db, auth } from "../firebaseConfig";
-import bground from "@/assets/images/light-purple-glitter-background-nkx73.png"
+import backgroundImage from "@/assets/images/light-purple-glitter-background-nkx73.png"
 
-
+/**
+ * AvailableRequestsScreen shows pending cleaning requests
+ * and allows users to accept tasks.
+*/
 const AvailableRequestsScreen = () => {
   const [requests, setRequests] = useState([]);
-
+  // Fetch cleaning requests from Firestore 
   useEffect(() => {
     fetchRequests();
   }, []);
 
-  // Fetch all pending cleaning requests from Firestore
+  /**
+   * Fetches all pending cleaning requests from Firestore
+   * Filters only requests with "pending" status.
+   */
   const fetchRequests = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, "cleaningRequests"));
@@ -28,16 +47,19 @@ const AvailableRequestsScreen = () => {
     }
   };
 
-  // Function to accept a cleaning task
+   /**
+    * Handles accepting a cleaning request
+    * @param {string} requestId the ID of the cleaning request
+   */
   const handleAcceptRequest = async (requestId) => {
     const user = auth.currentUser;
-    const cleanerEmail = user.email; // Get email from Firebase Auth
 
-  
     if (!user) {
       alert("You must be logged in to accept a request.");
       return;
     }
+
+    const cleanerEmail = user.email; // Get email from Firebase Auth
   
     try {
       // Fetch request details
@@ -67,11 +89,13 @@ const AvailableRequestsScreen = () => {
       await updateDoc(requestRef, {
         status: "accepted",
         cleanerId: user.uid,
-        cleanerEmail: cleanerEmail, // Store cleaner's email
+        cleanerEmail: cleanerEmail,
       });
 
       // Remove the accepted request from the UI
-      setRequests((prevRequests) => prevRequests.filter((req) => req.id !== requestId));
+      setRequests((prevRequests) =>
+        prevRequests.filter((req) => req.id !== requestId)
+      );
 
   
       alert("Request successfully assigned to you!");
@@ -81,42 +105,53 @@ const AvailableRequestsScreen = () => {
     }
   };
 
-  return (
-    <ImageBackground source={bground} style={styles.background} resizeMode="cover">
-    
-    <View style={styles.container}>
-      <Text style={styles.title}>Available Cleaning Requests</Text>
+  /**
+     * Renders each cleaning request item
+     * @param {object} item Cleaning request object
+   */
+  const renderRequestItem = ({ item }) => (
+    <View style={styles.requestItem}>
+      <Text style={styles.text}>📍 Location: {item.location}</Text>
+      <Text style={styles.text}>📅 Date: {item.date}</Text>
+      <Text style={styles.text}>⏰ Time: {item.time}</Text>
+      <Text style={styles.text}>📝 Notes: {item.additionalNotes}</Text>
+      <Text style={styles.status}>Status: {item.status}</Text>
 
-      <FlatList
-        data={requests}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.requestItem}>
-            <Text style={styles.text}>📍 Location: {item.location}</Text>
-            <Text style={styles.text}>📅 Date: {item.date}</Text>
-            <Text style={styles.text}>⏰ Time: {item.time}</Text>
-            <Text style={styles.text}>📝 Notes: {item.additionalNotes}</Text>
-            <Text style={styles.status}>Status: {item.status}</Text>
-
-            {item.status === "pending" && (
-              <TouchableOpacity
-                style={styles.acceptButton}
-                onPress={() => handleAcceptRequest(item.id)}
-              >
-                <Text style={styles.buttonText}>Accept Request</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-        ListEmptyComponent={<Text style={styles.noRequests}>No available requests</Text>} // Handles empty state properly
-        contentContainerStyle={{ flexGrow: 1 }} // Prevents height issues
-      />
+      {item.status === "pending" && (
+        <TouchableOpacity
+          style={styles.acceptButton}
+          onPress={() => handleAcceptRequest(item.id)}
+        >
+          <Text style={styles.buttonText}>Accept Request</Text>
+        </TouchableOpacity>
+      )}
     </View>
+  );
+
+  return (
+    <ImageBackground
+      source={backgroundImage}
+      style={styles.background}
+      resizeMode="cover"
+    >
+      <View style={styles.container}>
+        <Text style={styles.title}>Available Cleaning Requests</Text>
+
+        <FlatList
+          data={requests}
+          keyExtractor={(item) => item.id}
+          renderItem={renderRequestItem}
+          ListEmptyComponent={
+            <Text style={styles.noRequests}>No available requests</Text>
+          }
+          contentContainerStyle={{ flexGrow: 1 }}
+        />
+      </View>
     </ImageBackground>
-    
   );
 };
 
+// Styles
 const styles = StyleSheet.create({
   background: {
     flex: 1,
