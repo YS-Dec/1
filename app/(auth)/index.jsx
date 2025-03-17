@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import logo from "@/assets/images/logo.png";
+import broom from "@/assets/lottie/broom.json";
 import * as Haptics from "expo-haptics";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
 import Animated,{FadeInRight} from 'react-native-reanimated';
+import LottieView from 'lottie-react-native';
 import { 
   signInWithEmailAndPassword, 
   sendPasswordResetEmail, 
@@ -22,6 +24,7 @@ const LoginPage = () => {
   // Manage email and password states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   // **Login Handler with Email Verification Check**
   const handleLogin = async () => {
@@ -31,6 +34,7 @@ const LoginPage = () => {
       Alert.alert("Error", "Please enter both email and password.");
       return;
     }
+    setLoading(true);
   
     try {
       console.log("Attempting login...");
@@ -55,8 +59,13 @@ const LoginPage = () => {
       }
 
       console.log("Email verified, proceeding with login...");
+
+      //delay for animation before navigating
+      setTimeout(() => {
+        setLoading(false);
+        router.replace("(tabs)");
+      }, 2000);
       
-      router.replace("(tabs)");
       
       Alert.alert("Success", "Login successful!");
   
@@ -65,6 +74,7 @@ const LoginPage = () => {
       await AsyncStorage.setItem("authToken", user.accessToken);
     } catch (error) {
       console.error("Login failed:", error);
+      setLoading(false);
       Alert.alert("Login Error", error.message);
     }
   };
@@ -74,6 +84,8 @@ const LoginPage = () => {
       Alert.alert("Error", "Please enter both email and password.");
       return;
     }
+
+    setLoading(true);
   
     try {
       console.log("Attempting Cleaner login...");
@@ -94,6 +106,7 @@ const LoginPage = () => {
         console.log("Email is not verified!");
         Alert.alert("Email Not Verified", "Please check your email and verify your account before logging in.");
         await signOut(auth);
+        setLoading(false);
         return;
       }
   
@@ -111,9 +124,13 @@ const LoginPage = () => {
       // Redirect Based on Role
       if (userRole === "cleaner") {
         console.log("Replacing to cleaner tab")
-        router.push("(cleanertabs)/requests");
+        setTimeout(() => {
+          setLoading(false);
+          router.push("(cleanertabs)/requests");
+        }, 2000);
       } else {
         Alert.alert("Error", "This account is not registered as a cleaner.");
+        setLoading(false);
         await signOut(auth);
         return;
       }
@@ -239,8 +256,16 @@ const LoginPage = () => {
   };
 
   return (
-
     <View style={styles.container}>
+      {loading ? (
+        <LottieView
+          source={broom}
+          autoPlay
+          loop
+          style={styles.fullScreenLottie}
+        />
+      ) : (
+      <>
       <Animated.View style={styles.stars}>
         {Array.from({ length: 50 }).map((_, index) => (
           <Animated.View 
@@ -300,13 +325,21 @@ const LoginPage = () => {
       <TouchableOpacity style={styles.resendVerificationButton} onPress={handleResendVerification}>
         <Text style={styles.resendVerificationText}>Resend Verification Email</Text>
       </TouchableOpacity>
-      
+      </>
+    )}
     </View>
   );
 };
 
-// Styles
+//
 const styles = StyleSheet.create({
+  fullScreenLottie:{
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    flex: 1,
+    backgroundColor: "5D3FD3",
+  },
   container: { 
     flex: 1, 
     alignItems: 'center', 

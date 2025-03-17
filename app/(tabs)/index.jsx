@@ -11,6 +11,7 @@ import {
   Platform,
 } from "react-native";
 import Animated,{FadeIn, FadeInLeft, FadeInRight, FadeOut } from 'react-native-reanimated';
+import LottieView from 'lottie-react-native';
 import * as Haptics from "expo-haptics";
 import logo from "@/assets/images/logo.png";
 import bground from "@/assets/images/light-purple-glitter-background-nkx73.png"
@@ -178,6 +179,7 @@ const RequestCleaning = () => {
   };
 
   return (
+
     <>
       {/* On Web, ensure date/time pickers pop-up on top */}
       {Platform.OS === "web" && (
