@@ -103,7 +103,7 @@ const AdminCleanerApplications = () => {
       </Text>
       
       <FlatList
-        data={applications}
+        data={applications.filter((app) => app.status === "pending")} // ✅ Filter the list
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 30 }}
         renderItem={({ item }) => (
@@ -135,9 +135,8 @@ const AdminCleanerApplications = () => {
               >
                 <Text style={{ color: "white", textAlign: "center" }}>Approve</Text>
               </TouchableOpacity>
-            )}
+            ) && (
 
-            {item.status !== "Rejected" && (
               <TouchableOpacity
                 onPress={() => updateApplicationStatus(item.id, "Rejected", item.userId)}
                 style={{

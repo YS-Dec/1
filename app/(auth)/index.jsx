@@ -27,6 +27,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   // **Login Handler with Email Verification Check**
   const handleLogin = async () => {
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     if (!email || !password) {
@@ -59,7 +60,8 @@ const LoginPage = () => {
       }
 
       console.log("Email verified, proceeding with login...");
-      
+
+
       //delay for animation before navigating
       setTimeout(() => {
         setLoading(false);
@@ -77,8 +79,6 @@ const LoginPage = () => {
   };
 
   const handleCleanerLogin = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
     if (!email || !password) {
       Alert.alert("Error", "Please enter both email and password.");
       return;
@@ -123,11 +123,13 @@ const LoginPage = () => {
         console.log("Replacing to cleaner tab")
         //loading screen before navigating
         setTimeout(() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           setLoading(false);
           router.push("(cleanertabs)/requests");
         }, 2000);
       } else {
         Alert.alert("Error", "This account is not registered as a cleaner.");
+        setLoading(false);
         await signOut(auth);
         return;
       }

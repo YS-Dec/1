@@ -18,6 +18,7 @@
   "dependencies": {
     "@expo/vector-icons": "^14.0.2",
     "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
+    "@lottiefiles/dotlottie-react": "^0.6.5",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-community/datetimepicker": "8.2.0",
     "@react-native-masked-view/masked-view": "^0.3.2",
