@@ -39,8 +39,10 @@ const Plan = () => {
   const [isRatingModalVisible, setRatingModalVisible] = useState(false);
   const [isEditModalVisible, setEditModalVisible] = useState(false);
   const [newLocation, setNewLocation] = useState("");
-  const [newTime, setNewTime] = useState("");
-  const [newDate, setNewDate] = useState(new Date()); // Default: today
+  const [newTime, setNewTime] = useState(new Date()); 
+  const [tempTime, setTempTime] = useState(new Date()); 
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [newDate, setNewDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
 
@@ -144,8 +146,31 @@ const Plan = () => {
     console.log("Opening edit modal for request:", request);
     setSelectedRequest(request);
     setNewLocation(request.location || ""); // Default to current location
-    setNewTime(request.time || ""); // Default to current time
+    setNewTime(request.time || new Date()); // Default to current time
     setNewDate(request.date ? new Date(request.date) : new Date()); // Convert stored date to Date object
+
+      // ✅ Convert `request.time` to a Date object
+  if (request.time) {
+    const timeParts = request.time.match(/(\d+):(\d+) (\w+)/);
+      if (timeParts) {
+        let hours = parseInt(timeParts[1]);
+        const minutes = parseInt(timeParts[2]);
+        const ampm = timeParts[3];
+
+        if (ampm === "PM" && hours !== 12) {
+          hours += 12;
+        } else if (ampm === "AM" && hours === 12) {
+          hours = 0;
+        }
+
+        const newDateTime = new Date();
+        newDateTime.setHours(hours, minutes, 0);
+        setNewTime(newDateTime); // ✅ Ensures `newTime` is a Date object
+      }
+    } else {
+      setNewTime(new Date()); // Default to current time
+    }
+
 
     setEditModalVisible(true);
   };
@@ -230,41 +255,44 @@ const Plan = () => {
   const editRequest = async () => {
     if (!selectedRequest) return;
 
-    let formattedDate = newDate;
+    let formattedDate = newDate instanceof Date ? newDate.toISOString().split("T")[0] : "";
+
+    let hours = newTime.getHours() % 12 || 12; 
+    let minutes = newTime.getMinutes().toString().padStart(2, "0"); 
+    let ampm = newTime.getHours() >= 12 ? "PM" : "AM";
+    let formattedTime = `${hours}:${minutes} ${ampm}`; 
+
     if (Platform.OS === "web") {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(newDate)) {
-      Alert.alert("Invalid Date", "Please enter a valid date in YYYY-MM-DD format.");
+      if (!dateRegex.test(formattedDate)) {
+        Alert.alert("Invalid Date", "Please enter a valid date in YYYY-MM-DD format.");
+        return;
+      }
+    } else {
+      formattedDate = newDate instanceof Date ? newDate.toISOString().split("T")[0] : "";
+    }
+
+    const timeRegex = /^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/;
+    if (!timeRegex.test(formattedTime)) {
+      Alert.alert("Invalid Time", `Invalid format: ${formattedTime}. Please enter time in HH:MM AM/PM format.`);
       return;
     }
-  } else {
-    formattedDate = newDate instanceof Date ? newDate.toISOString().split("T")[0] : "";
-  }
-
-  // Validate Time Format
-  const timeRegex12u = /^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/i; // 12-hour format (HH:MM AM/PM)
-  const timeRegex12l = /^(0?[1-9]|1[0-2]):[0-5][0-9] (am|pm)$/i; // 12-hour format (HH:MM am/pm)
-
-
-  if (!timeRegex12u.test(newTime) && !timeRegex12l.test(newTime) ) {
-    Alert.alert("Invalid Time", "Please enter a valid time in HH:MM AM/PM or am/pm format.");
-    return;
-  }
 
     try {
       const requestRef = doc(db, "cleaningRequests", selectedRequest.id);
       await updateDoc(requestRef, { 
         location: newLocation, 
-        time: newTime,
-        date: newDate.toISOString().split("T")[0] // Convert to YYYY-MM-DD format
-
+        time: formattedTime,
+        date: formattedDate, 
       });
   
       Alert.alert("Updated!", "The request has been updated.");
 
       // Update local state to reflect the change
       setRequests(prev =>
-        prev.map(req => (req.id === selectedRequest.id ? { ...req, location: newLocation, time: newTime, date: formattedDate } : req))
+        prev.map(req => (req.id === selectedRequest.id 
+          ? { ...req, location: newLocation, time: formattedTime, date: formattedDate } 
+          : req))
       );
   
       setEditModalVisible(false);
@@ -410,15 +438,57 @@ const Plan = () => {
             placeholder="Enter new location"
           />
 
-          <TextInput
-            style={styles.input}
-            value={newTime}
-            onChangeText={setNewTime}
-            placeholder="Enter new time"
-          />
-          <Text style={styles.label}>Select Date:</Text>
+          {/* Time Picker */}
+          <Text style={styles.label}>Select Time:</Text>
+          <TouchableOpacity onPress={() => setShowTimePicker(true)} style={styles.datePickerButton}>
+            <Text style={styles.dateText}>
+              {newTime instanceof Date ? newTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true })
+                : "Select Time"}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Time Picker */}
+          {showTimePicker && (
+          <Modal transparent animationType="slide">
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <DateTimePicker
+                  value={tempTime || new Date()} // ✅ Use tempTime instead of newTime
+                  mode="time"
+                  display="spinner"
+                  textColor="black"
+                  is24Hour={false}
+                  onChange={(event, selectedTime) => {
+                  if (selectedTime) {
+                    setTempTime(selectedTime); // ✅ Temporarily store the selected time
+                  }
+                  }}
+                />
+
+                {/* Confirm Button */}
+                <TouchableOpacity onPress={() => {
+                  setNewTime(tempTime); // ✅ Only update when confirmed
+                  setShowTimePicker(false);
+                }} style={styles.confirmButton}>
+                  <Text style={styles.confirmButtonText}>Confirm</Text>
+                </TouchableOpacity>
+
+                {/* Cancel Button */}
+                <TouchableOpacity onPress={() => setShowTimePicker(false)} style={styles.cancelButton}>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+)}
+
+
+
+         
+          
 
           {/* Use TouchableOpacity for mobile, TextInput for web */}
+          <Text style={styles.label}>Select Date:</Text>
           {Platform.OS === "web" ? (
             <input
             type="date"
@@ -441,8 +511,8 @@ const Plan = () => {
                 setShowDatePicker(false);
                 if (selectedDate) setNewDate(selectedDate);
               }}
-          />
-        )}
+            />
+          )}
       </>
       )}
 
@@ -557,6 +627,42 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
   },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)", // Dark overlay
+  },
+  modalContent: {
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  confirmButton: {
+    marginTop: 10,
+    backgroundColor: "#2196F3",
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  confirmButtonText: {
+    color: "white",
+    fontSize: 16,
+  },
+  cancelButton: {
+    marginTop: 5,
+    backgroundColor: "#ccc",
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  cancelButtonText: {
+    color: "#333",
+    fontSize: 16,
+    padding:10,
+  },
+
 });
 
 export default Plan;
