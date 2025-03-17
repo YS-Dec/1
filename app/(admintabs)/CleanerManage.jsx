@@ -123,9 +123,8 @@ const AdminCleanerApplications = () => {
             <Text>Status: {item.status || "Pending"}</Text>
 
             {/* Approve / Reject Buttons */}
-            {item.status !== "Approved" && (
               <TouchableOpacity
-                onPress={() => updateApplicationStatus(item.id, "Approved", item.userId)}
+                onPress={() => {updateApplicationStatus(item.id, "Approved", item.userId); updateUserRole(item.userId, "cleaner")}}
                 style={{
                   backgroundColor: "green",
                   padding: 10,
@@ -135,7 +134,6 @@ const AdminCleanerApplications = () => {
               >
                 <Text style={{ color: "white", textAlign: "center" }}>Approve</Text>
               </TouchableOpacity>
-            ) && (
 
               <TouchableOpacity
                 onPress={() => updateApplicationStatus(item.id, "Rejected", item.userId)}
@@ -148,34 +146,8 @@ const AdminCleanerApplications = () => {
               >
                 <Text style={{ color: "white", textAlign: "center" }}>Reject</Text>
               </TouchableOpacity>
-            )}
 
             {/* Change User Role Buttons */}
-            <Text style={{ marginTop: 10, fontWeight: "bold" }}>Change User Role:</Text>
-
-            <TouchableOpacity
-              onPress={() => updateUserRole(item.userId, "cleaner")}
-              style={{
-                backgroundColor: "#ffa500",
-                padding: 10,
-                marginTop: 5,
-                borderRadius: 5,
-              }}
-            >
-              <Text style={{ color: "white", textAlign: "center" }}>Set as Cleaner</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => updateUserRole(item.userId, "user")}
-              style={{
-                backgroundColor: "#6c757d",
-                padding: 10,
-                marginTop: 5,
-                borderRadius: 5,
-              }}
-            >
-              <Text style={{ color: "white", textAlign: "center" }}>Set as User</Text>
-            </TouchableOpacity>
           </View>
         )}
         
