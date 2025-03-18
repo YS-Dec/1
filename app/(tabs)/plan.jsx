@@ -10,6 +10,7 @@ import {
   Modal,
   TextInput,
   ImageBackground,
+  Platform,
 } from 'react-native';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import {
@@ -26,7 +27,6 @@ import {
 import { db } from '../firebaseConfig';
 import { AntDesign } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Platform } from 'react-native';
 import backgroundImage from '@/assets/images/light-purple-glitter-background-nkx73.png';
 
 const COLOR_PRIMARY = '#BF40BF';
@@ -53,6 +53,9 @@ const Plan = () => {
   const [newDate, setNewDate] = useState(new Date());
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Log to check if the background image is being imported correctly
+  console.log('Background image import:', backgroundImage);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
@@ -234,7 +237,7 @@ const Plan = () => {
    */
   const renderStars = (ratingValue, interactive = false) => {
     return (
-      <View style={{ flexDirection: 'row' }}>
+      <View style={styles.starContainer}>
         {[1, 2, 3, 4, 5].map((star) => (
           <TouchableOpacity
             key={star}
@@ -247,7 +250,7 @@ const Plan = () => {
               name={star <= ratingValue ? 'star' : 'staro'}
               size={30}
               color='#FFD700'
-              style={{ marginHorizontal: 3 }}
+              style={styles.star}
             />
           </TouchableOpacity>
         ))}
@@ -329,14 +332,6 @@ const Plan = () => {
       minute: '2-digit',
       hour12: true,
     });
-
-    if (Platform.OS === 'web') {
-      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-      if (!dateRegex.test(formattedDate)) {
-        Alert.alert('Invalid Date', 'Please enter a valid date in YYYY-MM-DD format.');
-        return;
-      }
-    }
 
     try {
       const requestRef = doc(db, 'cleaningRequests', selectedRequest.id);
@@ -434,9 +429,11 @@ const Plan = () => {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size='large' color={COLOR_PRIMARY} />
-      </View>
+      <ImageBackground source={backgroundImage} style={styles.background}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLOR_PRIMARY} />
+        </View>
+      </ImageBackground>
     );
   }
 
@@ -445,7 +442,7 @@ const Plan = () => {
       <View style={styles.container}>
         <Text style={[styles.header, { color: '#000000' }]}>Your Cleaning Requests</Text>
         <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
-          <AntDesign name='reload1' size={24} color='white' />
+          <AntDesign name="reload1" size={24} color="white" />
           <Text style={[styles.buttonText, { color: 'white' }]}>Click Here to Refresh</Text>
         </TouchableOpacity>
         {requests.length === 0 ? (
@@ -455,10 +452,10 @@ const Plan = () => {
             data={requests}
             keyExtractor={(item) => item.id}
             renderItem={renderRequest}
-            contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
+            contentContainerStyle={styles.flatListContent}
           />
         )}
-        <Modal visible={isRatingModalVisible} transparent animationType='slide'>
+        <Modal visible={isRatingModalVisible} transparent animationType="slide">
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Rate the Cleaning Task</Text>
@@ -478,7 +475,7 @@ const Plan = () => {
             </View>
           </View>
         </Modal>
-        <Modal visible={isEditModalVisible} transparent animationType='slide'>
+        <Modal visible={isEditModalVisible} transparent animationType="slide">
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Edit Request</Text>
@@ -486,17 +483,25 @@ const Plan = () => {
                 style={styles.input}
                 value={newLocation}
                 onChangeText={setNewLocation}
-                placeholder='Enter new location'
+                placeholder="Enter new location"
               />
-              <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowTimePicker(true)}>
+              <TouchableOpacity
+                style={styles.datePickerButton}
+                onPress={() => setShowTimePicker(true)}
+              >
                 <Text style={styles.dateText}>
-                  {newTime ? newTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Select Time'}
+                  {newTime
+                    ? newTime.toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : 'Select Time'}
                 </Text>
               </TouchableOpacity>
               {showTimePicker && (
                 <DateTimePicker
                   value={newTime}
-                  mode='time'
+                  mode="time"
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                   onChange={(event, selectedTime) => {
                     setShowTimePicker(false);
@@ -506,31 +511,24 @@ const Plan = () => {
                   }}
                 />
               )}
-              <Text style={styles.label}>Select Date:</Text>
-              {Platform.OS === 'web' ? (
-                <input
-                  type='date'
-                  style={styles.input}
+              <TouchableOpacity
+                style={styles.datePickerButton}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Text style={styles.dateText}>
+                  {newDate ? newDate.toDateString() : 'Select Date'}
+                </Text>
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
                   value={newDate}
-                  onChange={(event) => setNewDate(event.target.value)}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(event, selectedDate) => {
+                    setShowDatePicker(false);
+                    if (selectedDate) setNewDate(selectedDate);
+                  }}
                 />
-              ) : (
-                <>
-                  <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.datePickerButton}>
-                    <Text style={styles.dateText}>{newDate.toDateString()}</Text>
-                  </TouchableOpacity>
-                  {showDatePicker && (
-                    <DateTimePicker
-                      value={newDate}
-                      mode='date'
-                      display='default'
-                      onChange={(event, selectedDate) => {
-                        setShowDatePicker(false);
-                        if (selectedDate) setNewDate(selectedDate);
-                      }}
-                    />
-                  )}
-                </>
               )}
               <TouchableOpacity style={styles.submitButton} onPress={editRequest}>
                 <Text style={styles.buttonText}>Save Changes</Text>
@@ -549,12 +547,18 @@ const Plan = () => {
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    justifyContent: 'center',
+    width: '100%',
+    height: '100%',
   },
   container: {
-    flexGrow: 1,
+    flex: 1,
     padding: 20,
-    paddingBottom: 100,
+    backgroundColor: 'transparent',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: 'transparent',
   },
   header: {
@@ -632,6 +636,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 10,
     alignItems: 'center',
+    width: '80%',
   },
   modalTitle: {
     fontSize: 20,
@@ -672,15 +677,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  label: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
   refreshButton: {
     padding: 10,
     borderRadius: 5,
     backgroundColor: 'black',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   showEmailButton: {
     marginTop: 10,
@@ -699,6 +703,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     color: '#333',
+  },
+  starContainer: {
+    flexDirection: 'row',
+  },
+  star: {
+    marginHorizontal: 3,
+  },
+  flatListContent: {
+    flexGrow: 1,
+    paddingBottom: 100,
   },
 });
 
